@@ -1,0 +1,14 @@
+resolver: lts-20.26
+allow-newer: true
+
+packages:
+- .
+
+extra-deps:
+- codeworld-api-0.8.1
+- reflex-0.9.2.0
+- commutative-semigroups-0.1.0.1
+- patch-0.0.8.2
+- blank-canvas-0.7.3@sha256:b24a082cd7b37f6835ab87d4d99562ed1785e295e42472337aa92037c4014653,5103
+- kansas-comet-0.4.1@sha256:5744f0dc96864c92f57e025c1546d9cac9ebe06a2b8deb7f05c87452161caf8a,2306
+- monoidal-containers-0.6.2.0@sha256:124941d70df5e2928b4c6db605a1d0464e68c2c6b02e426db24a40194d43821d,2219
