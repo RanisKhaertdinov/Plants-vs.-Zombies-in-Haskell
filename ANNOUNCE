@@ -1,0 +1,75 @@
+I'm pleased to announce the release of FunGEn 1.0 !
+
+What is it ?
+
+FunGEn (Functional Game Engine) is the oldest game engine in Haskell.
+It was created by Andre Furtado in 2002, has never been used since,
+and yet it is arguably still the easiest and most practical way to
+make a video game using Haskell. It is BSD-licensed, installs easily
+on unix, mac and windows, does not use FRP, and comes with two
+playable example games.
+
+What does it do ?
+
+Here's Andre's original feature list:
+
+- Initialization, updating, removing, rendering and grouping
+  routines for game objects;
+
+- Definition of a game background (or map), including texture-based
+  maps and tile maps;
+
+- Reading and intepretation of the player's keyboard input;
+
+- Collision detection;
+
+- Time-based functions and pre-defined game actions;
+
+- Loading and displaying of 24-bit bitmap files;
+
+- Some debugging and game performance evaluation facilities;
+
+- Sound support (actually for windows platforms only... :-[ )
+
+What's new in 1.0 ?
+
+- supports GHC 7.10
+
+- supports stack
+
+- the repo (and project) has moved to the haskell-game organization on Github
+
+How to install
+
+$ cabal update
+$ cabal install FunGEn
+# ensure ~/.cabal/bin or windows equiv. is in your PATH
+
+or 
+
+$ git clone https://github.com/haskell-game/fungen
+$ cd fungen
+$ stack install
+
+How to run the examples
+
+$ fungen-hello
+$ fungen-pong
+$ fungen-worms
+
+More info
+
+http://hackage.haskell.org/package/FunGEn
+https://github.com/haskell-game/fungen
+http://joyful.com/fungen - old home page
+
+Why ?
+
+I think FunGEn still has some value, for building games and also as an
+example of how to structure games in haskell. I don't have time to do
+much with it, so I've moved it to the haskell-game organization, where
+all org members now have push access.  I'd like it to be as open as
+possible to contributors, and am seeking a new or co- maintainer.
+
+Best,
+-Simon (sm on #haskell-game)

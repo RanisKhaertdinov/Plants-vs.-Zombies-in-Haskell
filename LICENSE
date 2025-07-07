@@ -1,4 +1,6 @@
-Copyright (c) 2022, Nikolai Kudasov
+Copyright (C) 2002 Andre Furtado <awbf@cin.ufpe.br>
+Copyright (C) 2008 Miloslav Raus <666wman@gmail.com>
+Copyright (C) 2008,2011-2013 Simon Michael <simon@joyful.com>
 
 All rights reserved.
 
@@ -13,7 +15,7 @@ modification, are permitted provided that the following conditions are met:
       disclaimer in the documentation and/or other materials provided
       with the distribution.
 
-    * Neither the name of Nikolai Kudasov nor the names of other
+    * Neither the name of Simon Michael nor the names of other
       contributors may be used to endorse or promote products derived
       from this software without specific prior written permission.
 
