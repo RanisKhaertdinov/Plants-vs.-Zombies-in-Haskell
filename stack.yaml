@@ -1,3 +1,8 @@
 packages:
 - '.'
-resolver: lts-21.9
+resolver: lts-21.25
+executables:
+  hello:
+    main: examples/PvZ/hello.hs
+    source-dirs: .
+    other-modules: [GameMap]
