@@ -1,37 +1,34 @@
-
 module Main where
 
 import Graphics.Gloss
+import GameMap
+import Zombie
+
+-- | Состояние игры
+data GameState = Playing Float  -- Время игры
+               | GameOver       -- Игра окончена
+
+-- | Критическая точка, при достижении которой игра заканчивается
+criticalX :: Float
+criticalX = -400
 
 main :: IO ()
-main    = animate (InWindow "machina" (800, 600) (10, 10))
-                  black frame
+main = do
+    map <- generateMap
+    animate (InWindow "PvZ" (800, 600) (10, 10)) black (frame map)
 
-frame :: Float -> Picture
-frame time
-        = Scale 0.8 0.8
-        $ Rotate (time * 30)
-        $ mach time 6
+frame :: Picture -> Float -> Picture
+frame mapPic time =
+    let x = 600 - 100 * time
+        zombie = if x > criticalX
+                 then Translate x 0 generateZombie
+                 else Translate criticalX 0 generateZombie
+        gameState = if x <= criticalX
+                   then GameOver
+                   else Playing time
+    in case gameState of
+         GameOver -> Pictures [mapPic, zombie, gameOverText]
+         Playing _ -> Pictures [mapPic, zombie]
 
-mach :: Float -> Int -> Picture
-mach _ 0 = leaf
-mach t d
- = Pictures
-        [ leaf
-        , Translate 0 (-100)
-                $ Scale 0.8 0.8
-                $ Rotate (90 + t * 30)
-                $ mach (t * 1.5) (d - 1)
-
-        , Translate 0   100
-                $ Scale 0.8 0.8
-                $ Rotate (90 - t * 30)
-                $ mach (t * 1.5) (d - 1) ]
-
-leaf :: Picture
-leaf    = Pictures
-                [ Color (makeColor 1.0 1.0 1.0 0.5) $ Polygon loop
-                , Color (makeColor 0.0 0.0 1.0 0.8) $ Line loop ]
-
-loop :: [(Float,Float)]
-loop    = [(-10, -100), (-10, 100), (10, 100), (10, -100), (-10, -100)]
+gameOverText :: Picture
+gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
