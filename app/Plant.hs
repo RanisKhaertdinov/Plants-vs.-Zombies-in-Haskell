@@ -15,11 +15,11 @@ data PlantType
 generatePlant :: Plant -> Picture 
 generatePlant (Plant Sunflower (x, y) health) = 
     if health > 0 
-    then Translate x y $ Color (makeColor 1.0 1.0 1.0 1) $ circleSolid 30
+    then Translate x y $ Color yellow $ circleSolid 30
     else blank
 generatePlant (Plant Peashooter (x, y) health) = 
     if health > 0 
-    then Translate x y $ Color (makeColor 0.0 1.0 1.0 1) $ circleSolid 30
+    then Translate x y $ Color green $ circleSolid 30
     else blank
 
 

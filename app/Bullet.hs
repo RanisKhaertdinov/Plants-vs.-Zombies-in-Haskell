@@ -18,7 +18,7 @@ generateBullet plant@(Plant Peashooter (x, y) _) time gameMod =
                 bulletPics = [ let t = mod' (bulSpeed * t') distance
                                    bulX = x + t
                                in if t' >= 0
-                                  then Translate bulX y $ Color (makeColor 0.0 1.0 1.0 1) $ circleSolid 10
+                                  then Translate bulX y $ Color green $ circleSolid 10
                                   else blank
                              | t' <- bulletTimes
                            ]
