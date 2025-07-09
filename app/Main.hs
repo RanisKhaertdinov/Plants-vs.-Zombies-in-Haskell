@@ -4,7 +4,8 @@ import Graphics.Gloss
 import GameMap
 import Zombie
 import Plant
-import GameTypes  -- Игра окончена
+import GameStates
+import Bullet
 
 -- | Критическая точка, при достижении которой игра заканчивается
 criticalX :: Float
@@ -24,9 +25,9 @@ frame mapPic time =
         gameState = if x <= criticalX
                    then GameOver
                    else Playing time
-        plant1 = generatePlant (Plant Sunflower (-200, 0) 100)
-        plant2 = generatePlant (Plant Peashooter (-200, 100) 200) 
-        bullet = generateBullet (Plant Peashooter (-200, 100) 200) time gameState
+        plant1 = generatePlant (Plant Sunflower (-200, 100) 100)
+        plant2 = generatePlant (Plant Peashooter (-200, 0) 200) 
+        bullet = generateBullet (Plant Peashooter (-200, 0) 200) time gameState
     in case gameState of
          GameOver -> Pictures [mapPic, zombie, plant1, plant2, bullet, gameOverText]
          Playing _ -> Pictures [mapPic, zombie, plant1, plant2, bullet]
