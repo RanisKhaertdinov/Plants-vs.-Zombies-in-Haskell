@@ -75,7 +75,8 @@ executable PvZ
     other-modules:    GameMap
                     , Zombie
                     , Plant
-                    , GameTypes
+                    , GameStates
+                    , Bullet
                     
     -- Directories containing source files.
     hs-source-dirs:   app
