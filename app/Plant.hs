@@ -1,4 +1,10 @@
-module Plant where
+module Plant
+    ( PlantType(..)
+    , Plant(..)
+    , PlantCard(..)
+    , availableCards
+    , generatePlant
+    ) where
 
 import Graphics.Gloss
 
