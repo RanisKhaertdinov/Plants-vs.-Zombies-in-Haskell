@@ -1,7 +1,6 @@
 module GameMap (generateMap) where
 
 import Graphics.Gloss
-import System.Environment
 
 -- | Displays uncompressed 24/32 bit BMP images.
 generateMap :: IO Picture

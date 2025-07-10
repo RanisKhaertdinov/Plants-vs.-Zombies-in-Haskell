@@ -1,6 +1,6 @@
 module GameStates where
 
-import Types (PlantType)
+import Plant (PlantType(..))  -- Импорт из Plant.hs
 
 data GameState = Playing Float | GameOver | SelectingPlant PlantType
     deriving (Show)
