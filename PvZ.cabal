@@ -78,6 +78,7 @@ executable PvZ
                     , GameStates
                     , Bullet
                     , LittleSun
+                    , PlantCards
                     
     -- Directories containing source files.
     hs-source-dirs:   app
