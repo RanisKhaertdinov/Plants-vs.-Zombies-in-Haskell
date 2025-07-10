@@ -2,5 +2,8 @@ module GameStates where
 
 import Plant
 
-data GameState = Playing Float | GameOver | SelectingPlant PlantType
+data GameState 
+    = Playing [Plant] Float 
+    | GameOver 
+    | SelectingPlant [Plant] Float PlantType
     deriving (Show)

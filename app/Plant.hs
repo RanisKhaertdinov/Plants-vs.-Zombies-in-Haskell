@@ -6,6 +6,7 @@ import Graphics.Gloss
 
 data Plant  -- (dx, dy) health
     = Plant PlantType (Float, Float) Int
+    deriving (Show)
 
 data PlantType
     = Sunflower

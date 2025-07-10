@@ -9,7 +9,7 @@ import GameStates
 generateSun :: Plant -> Float -> GameState -> Picture
 generateSun (Plant Sunflower (x, y) _ ) time gameMod =
     case gameMod of
-        Playing _ ->
+        Playing _ _ ->
             let distance = 70
                 interval = 3
                 angles = [0, 2 * pi / 3, 4 * pi / 3]
@@ -26,5 +26,5 @@ generateSun (Plant Sunflower (x, y) _ ) time gameMod =
                   ]
             in Pictures sunPics
         GameOver -> blank
-        SelectingPlant _ -> blank
+        SelectingPlant _ _ _ -> blank
 generateSun _ _ _ = blank
