@@ -1,16 +1,14 @@
-{-# LANGUAGE PartialTypeSignatures #-}
 module Bullet where
 
+
 import Graphics.Gloss
-    ( Picture, blank, Color, circleSolid, translate, color
-    , Picture(Pictures), Picture(Translate)
-    )
-import Plant (Plant(..), PlantType(..))
-import GameStates (GameState(..))
+import Plant
+import GameStates
 import Data.Fixed (mod')
 
-generateBullet :: Plant -> Float -> GameState-> _ -> Picture
-generateBullet plant@(Plant Peashooter (x, y) _) time gameMod green =
+
+generateBullet :: Plant -> Float -> GameState-> Picture
+generateBullet (Plant Peashooter (x, y) _) time gameMod =
     case gameMod of
         Playing _ ->
             let bulSpeed = 200
@@ -20,11 +18,11 @@ generateBullet plant@(Plant Peashooter (x, y) _) time gameMod green =
                 bulletPics = [ let t = mod' (bulSpeed * t') distance
                                    bulX = x + t
                                in if t' >= 0
-                                  then translate bulX y $ color green $ circleSolid 10
+                                  then Translate bulX y $ Color green $ circleSolid 10
                                   else blank
                              | t' <- bulletTimes
                            ]
             in Pictures bulletPics
         GameOver -> blank
         SelectingPlant _ -> blank
-generateBullet _ _ _ green = blank
+generateBullet _ _ _ = bl

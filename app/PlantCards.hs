@@ -1,4 +1,4 @@
-module PlantCards (renderPlantCards) where
+module PlantCards  where
 
 import Graphics.Gloss
 import Plant

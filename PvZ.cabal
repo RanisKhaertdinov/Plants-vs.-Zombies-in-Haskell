@@ -80,6 +80,7 @@ executable PvZ
                     , LittleSun
                     , PlantCards
                     
+                    
     -- Directories containing source files.
     hs-source-dirs:   app
 
