@@ -1,12 +1,7 @@
-module Plant
-    ( Plant(..)
-    , PlantCard(..)
-    , availableCards
-    , generatePlant
-    ) where
+module Plant where
 
 import Graphics.Gloss
-import Types (PlantType)
+ 
 
 
 data Plant  -- (dx, dy) health

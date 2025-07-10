@@ -1,4 +1,4 @@
-module GameMap (generateMap) where
+module GameMap  where
 
 import Graphics.Gloss
 import System.Environment

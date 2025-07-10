@@ -3,7 +3,6 @@ module LittleSun where
 import Graphics.Gloss
 import Plant
 import GameStates
-import Data.Fixed (mod')
 
 
 
@@ -27,4 +26,5 @@ generateSun (Plant Sunflower (x, y) _ ) time gameMod =
                   ]
             in Pictures sunPics
         GameOver -> blank
+        SelectingPlant _ -> blank
 generateSun _ _ _ = blank

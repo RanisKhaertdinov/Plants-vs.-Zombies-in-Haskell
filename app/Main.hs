@@ -1,13 +1,14 @@
 module Main where
 
 import Graphics.Gloss
+import Graphics.Gloss.Interface.Pure.Game
 import GameMap
 import Zombie
-import Plant (PlantType(..), availableCards)
+import Plant 
 import GameStates
 import Bullet
 import LittleSun
-import PlantCards (renderPlantCards)
+import PlantCards 
 
 -- | Критическая точка, при достижении которой игра заканчивается
 criticalX :: Float
@@ -35,6 +36,7 @@ frame mapPic time =
     in case gameState of
          GameOver -> Pictures [mapPic, zombie, plant1, plant2, bullet, sun, cards, gameOverText]
          Playing _ -> Pictures [mapPic, zombie, plant1, plant2, bullet, sun, cards]
+         SelectingPlant _ -> Pictures [mapPic, cards]
 
 gameOverText :: Picture
 gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
