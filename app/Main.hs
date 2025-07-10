@@ -15,11 +15,11 @@ criticalX :: Float
 criticalX = -400
 
 baseZombies = [
-    (Zombie (Position 333 0 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1))
-    , (Zombie (Position 266 1 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1))
-    , (Zombie (Position 200 2 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1))
-    , (Zombie (Position 266 3 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1))
-    , (Zombie (Position 333 4 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1))
+      Zombie (Position 333 0 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1)
+    , Zombie (Position 266 1 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1)
+    , Zombie (Position 200 2 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1)
+    , Zombie (Position 266 3 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1)
+    , Zombie (Position 333 4 50 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1)
     ]
 
 main :: IO ()
@@ -58,8 +58,8 @@ frame mapPic gs = Pictures allPictures
     cards = renderPlantCards currentSun availableCards
 
     sunDisplay = Translate 300 250 $ Pictures
-      [ Color yellow $ circleSolid 20  -- Иконка солнца
-      , Color yellow $ Translate 30 (-7) $ Scale 0.3 0.3 $ Text (show currentSun)  -- Количество
+      [ Color yellow $ circleSolid 20 
+      , Color yellow $ Translate 30 (-7) $ Scale 0.3 0.3 $ Text (show currentSun)  
       ]
 
     allPictures = case gs of
@@ -82,7 +82,7 @@ handleEvent :: Event -> GameState -> GameState
 handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) state =
     case state of
         Playing plants t sun
-            | x > 250 && x < 300 && y > 220 && y < 280 ->
+            | x > 250 && x < 350 && y > 220 && y < 280 ->
                 let sunResults = map (\p -> generateSun p t state) plants
                     collectedSun = sum (map snd sunResults)
                 in Playing plants t (sun + collectedSun)
@@ -111,7 +111,7 @@ handleEvent _ state = state
 
 handlePlantSelection :: Float -> Float -> GameState -> GameState
 handlePlantSelection x y (Playing plants t sun)
-    | y > 200 && y < 350 = -- Клик по карточкам
+    | y > 200 && y < 350 = 
         let idx = floor ((x + 350) / 120)
         in if idx >= 0 && idx < length availableCards
            then let card = availableCards !! idx
@@ -120,9 +120,19 @@ handlePlantSelection x y (Playing plants t sun)
                    else Playing plants t sun
            else Playing plants t sun
     | otherwise = Playing plants t sun
+handlePlantSelection _ _ gs = gs
 
 updateGame :: Float -> GameState -> GameState
-updateGame dt (Playing plants t sun) = Playing plants (t + dt) sun
-updateGame dt (SelectingPlant plants t plantType sun) = SelectingPlant plants (t + dt) plantType sun
-updateGame _ (GameOver) = GameOver
-updateGame _ gs = gs
+updateGame dt (Playing plants t sun) = 
+    let newTime = t + dt
+        zombies = updateAllZ baseZombies newTime
+    in if checkFinish zombies criticalX
+       then GameOver
+       else Playing plants newTime sun
+updateGame dt (SelectingPlant plants t plantType sun) = 
+    let newTime = t + dt
+        zombies = updateAllZ baseZombies newTime
+    in if checkFinish zombies criticalX
+       then GameOver
+       else SelectingPlant plants newTime plantType sun
+updateGame _ GameOver = GameOver
