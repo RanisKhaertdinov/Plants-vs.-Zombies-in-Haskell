@@ -3,11 +3,11 @@ module Main where
 import Graphics.Gloss
 import GameMap
 import Zombie
-import Plant
+import Plant (PlantType(..), availableCards)
 import GameStates
 import Bullet
 import LittleSun
-import PlantCards
+import PlantCards (renderPlantCards)
 
 -- | Критическая точка, при достижении которой игра заканчивается
 criticalX :: Float
