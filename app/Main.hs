@@ -41,7 +41,7 @@ gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
 
 handleEvent :: Event -> GameState -> GameState
 handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) gs
-    | y > 200 && y < 350 =  -- Клик в области карточек
+    | y > 200 && y < 350 =  
         let idx = floor ((x + 350) / 120)
         in if idx >= 0 && idx < length availableCards
            then SelectingPlant (cardType (availableCards !! idx))
