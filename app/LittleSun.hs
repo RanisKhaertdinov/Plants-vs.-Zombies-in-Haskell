@@ -4,27 +4,25 @@ import Graphics.Gloss
 import Plant
 import GameStates
 
-
-
-generateSun :: Plant -> Float -> GameState -> Picture
-generateSun (Plant Sunflower (x, y) _ ) time gameMod =
-    case gameMod of
-        Playing _ _ ->
-            let distance = 70
-                interval = 3
-                angles = [0, 2 * pi / 3, 4 * pi / 3]
-                sunPics = [ 
-                    let t' = time - fromIntegral i * interval
-                        in if t' >= 0
-                            then
-                                let progress = min 1 t' 
-                                    sunX = x + progress * distance * cos angle
-                                    sunY = y + progress * distance * sin angle
-                                in Translate sunX sunY $ Color yellow $ circleSolid 20
+generateSun :: Plant -> Float -> GameState -> (Picture, Int)
+generateSun plant time gameMod = case plant of
+    (Plant Sunflower (x, y) _) ->
+        case gameMod of
+            Playing _ _ _ ->
+                let distance = 70
+                    interval = 3
+                    angles = [0, 2 * pi / 3, 4 * pi / 3]
+                    sunPics = [
+                        let t' = time - fromIntegral (i::Int) * interval
+                        in if t' >= 0 && t' < interval
+                            then let progress = min 1 (t' / interval)
+                                 in Translate (x + progress * distance * cos angle)
+                                             (y + progress * distance * sin angle)
+                                             (Color yellow $ circleSolid 20)
                             else blank
-                    | (i, angle) <- zip [0..] angles
-                  ]
-            in Pictures sunPics
-        GameOver -> blank
-        SelectingPlant _ _ _ -> blank
-generateSun _ _ _ = blank
+                        | (i, angle) <- zip [0..2] angles
+                      ]
+                    generatedSun = if time < 0.1 then 25 else 0
+                in (Pictures sunPics, generatedSun)
+            _ -> (blank, 0)
+    _ -> (blank, 0)
