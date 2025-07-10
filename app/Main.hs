@@ -7,6 +7,7 @@ import Plant
 import GameStates
 import Bullet
 import LittleSun
+import PlantCards
 
 -- | Критическая точка, при достижении которой игра заканчивается
 criticalX :: Float
@@ -30,9 +31,10 @@ frame mapPic time =
         plant2 = generatePlant (Plant Peashooter (-200, 0) 200) 
         bullet = generateBullet (Plant Peashooter (-200, 0) 200) time gameState
         sun = generateSun (Plant Sunflower (-200, 100) 100) time gameState
+        cards = renderPlantCards availableCards
     in case gameState of
-         GameOver -> Pictures [mapPic, zombie, plant1, plant2, bullet, sun, gameOverText]
-         Playing _ -> Pictures [mapPic, zombie, plant1, plant2, bullet, sun]
+         GameOver -> Pictures [mapPic, zombie, plant1, plant2, bullet, sun, cards, gameOverText]
+         Playing _ -> Pictures [mapPic, zombie, plant1, plant2, bullet, sun, cards]
 
 gameOverText :: Picture
 gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
