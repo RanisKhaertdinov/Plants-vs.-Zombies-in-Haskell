@@ -1,3 +1,3 @@
 module GameStates where
 
-data GameState = Playing Float | GameOver
+data GameState = Playing Float | GameOver | SelectingPlant PlantType
