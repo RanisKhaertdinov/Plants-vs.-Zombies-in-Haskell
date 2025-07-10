@@ -10,7 +10,7 @@ import Data.Fixed (mod')
 generateBullet :: Plant -> Float -> GameState-> Picture
 generateBullet (Plant Peashooter (x, y) _) time gameMod =
     case gameMod of
-        Playing _ ->
+        Playing  _ _ ->
             let bulSpeed = 200
                 distance = 600 - x
                 interval = 1.5
@@ -22,7 +22,8 @@ generateBullet (Plant Peashooter (x, y) _) time gameMod =
                                   else blank
                              | t' <- bulletTimes
                            ]
+                
             in Pictures bulletPics
         GameOver -> blank
-        SelectingPlant _ -> blank
-generateBullet _ _ _ = bl
+        SelectingPlant  _ _ _ -> blank
+generateBullet _ _ _ = blank
