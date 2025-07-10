@@ -1,4 +1,6 @@
 module GameStates where
 
-data GameState = Playing Float | GameOver
+import Types (PlantType)
+
+data GameState = Playing Float | GameOver | SelectingPlant PlantType
     deriving (Show)
