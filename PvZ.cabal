@@ -79,6 +79,9 @@ executable PvZ
                     , Bullet
                     , LittleSun
                     , PlantCards
+                    , LawnMower
+                    , GameTypes
+                    , Collision
                     
                     
     -- Directories containing source files.
