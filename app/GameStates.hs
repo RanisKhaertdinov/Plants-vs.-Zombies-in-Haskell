@@ -1,6 +1,7 @@
 module GameStates where
 
 import Plant
+import LawnMower
 
 data Sun = Sun
     { startPos :: (Float, Float)
@@ -10,8 +11,8 @@ data Sun = Sun
     , fallProgress :: Float
     } deriving (Show)
 
-data GameState 
-    = Playing [Plant] Float Int [Sun] [((Float,Float), Float)]
-    | GameOver 
-    | SelectingPlant [Plant] Float PlantType Int [Sun] [((Float,Float), Float)]
+data GameState
+    = Playing [Plant] Float Int [Sun] [((Float,Float), Float)] [LawnMower]
+    | GameOver
+    | SelectingPlant [Plant] Float PlantType Int [Sun] [((Float,Float), Float)] [LawnMower]
     deriving (Show)
