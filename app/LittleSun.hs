@@ -23,8 +23,9 @@ renderSun (Sun (x0, y0) (x1, y1) _ _ f)
     | otherwise = Translate (x0 + (x1 - x0) * f) (y0 + (y1 - y0)*f) prettySun
 
 isSunClicked :: Sun -> (Float, Float) -> Bool
-isSunClicked (Sun _ (x, y) _ _ _) (x', y') =
-    abs (x - x') < 20 && abs (y - y') < 20
+isSunClicked (Sun (x0, y0) (x1, y1) _ _ f) (x', y') =
+    let (x, y) = if f >= 1 then (x1, y1) else (x0 + (x1 - x0) * f, y0 + (y1 - y0) * f)
+    in abs (x - x') < 20 && abs (y - y') < 20
          
 updateSuns :: Float -> [Sun] -> [Sun]
 updateSuns dt = filter (\s -> dt - bornTime s < 8) . map (\s -> s { fallProgress = min 1 (fallProgress s + dt * 0.3)})
