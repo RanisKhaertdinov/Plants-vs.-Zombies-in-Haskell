@@ -14,7 +14,6 @@ import Data.List (foldl', find, lookup)
 import Data.Maybe (listToMaybe)
 import GameTypes (Position(..), Zombie(..), Coloring(..), posLane, zombiePos)
 import qualified Zombie as Z
-import Debug.Trace
 
 -- Константы игры
 criticalX :: Float
@@ -25,20 +24,27 @@ sunInterval = 3
 
 -- Для отладки: использовать singleZombie для проверки коллизий
 debugMode :: Bool
-debugMode = False -- Установите False для полного V-образного строя
+debugMode = False -- Установите False для двух зомби в каждом ряду
 
 baseZombies :: [Z.Zombie]
 baseZombies = if debugMode
   then [Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1)]  -- Один зомби в lane 2
   else [
-    -- Leader at front (center, lane 2)
-    Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    -- Second row, slightly behind (lanes 1 and 3)
-    Z.Zombie (Position 425 1 40 (425, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 425 3 40 (425, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    -- Third row, further behind (lanes 0 and 4)
+    -- Lane 0: Two zombies
     Z.Zombie (Position 450 0 40 (450, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 450 4 40 (450, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
+    Z.Zombie (Position 500 0 40 (460, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
+    -- Lane 1: Two zombies
+    Z.Zombie (Position 425 1 40 (425, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 475 1 40 (435, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    -- Lane 2: Two zombies
+    Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 450 2 40 (410, 0) (30, 30)) 10 (Coloring 1 1 1 1),
+    -- Lane 3: Two zombies
+    Z.Zombie (Position 425 3 40 (425, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 475 3 40 (435, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    -- Lane 4: Two zombies
+    Z.Zombie (Position 450 4 40 (450, 133.2) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 500 4 40 (460, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
   ]
 
 main :: IO ()
@@ -78,8 +84,7 @@ renderGameState gs = Pictures $ allPictures
       SelectingPlant _ _ _ _ _ _ _ zs -> zs
       GameOver -> []
 
-    picZ = Z.animateAllZ zombies ++
-           [Translate (-300) 200 $ Color white $ Scale 0.2 0.2 $ Text $ show (map (\z -> (fst (posCoord (zombiePos z)), posLane (zombiePos z), zombieHealth z)) zombies)]
+    picZ = Z.animateAllZ zombies
 
     plantPics = map generatePlant plants
     bulletPics = map (\p -> generateBullet p currentTime gs) plants
@@ -148,7 +153,7 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies) =
   let newTime = t + dt
       -- Update zombies before collision
       updatedZombies = Z.updateAllZ zombies newTime
-      -- Process collisions, killing all colliding zombies
+      -- Process collisions, killing all colliding zombies in the same lane
       (activatedMowers, collidedZombies) = processCollisions mowers updatedZombies
       -- Remove dead zombies
       finalZombies = Z.clearDead collidedZombies
@@ -176,15 +181,17 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies) =
      else Playing plants newTime sun allSuns updatedTimers movedMowers finalZombies
   where
     processCollisions ms zs =
-      let collisions = [(i, z) | (m, i) <- zip ms [0..], z <- zs, not (isActive m), isColliding z m]
-          updatedMowers = foldl' (\ms' (i, _) -> activateMower i ms') ms collisions
-          updatedZombies = foldl' (\zs' (_, z) -> map (\z' -> if z' == z then trace ("Killing zombie at " ++ show (posCoord (zombiePos z'))) (Z.hitZombie z' (zombieHealth z')) else z') zs') zs collisions
+      let -- Find lanes where any zombie collides with a lawnmower
+          collidingLanes = [lawnLane m | (m, i) <- zip ms [0..], any (\z -> C.checkCollision z m && abs (posLane (zombiePos z) - lawnLane m) < 0.1) zs, not (isActive m)]
+          -- Activate mowers in colliding lanes
+          updatedMowers = foldl' (\ms' i -> activateMower i ms') ms [i | (m, i) <- zip ms [0..], lawnLane m `elem` collidingLanes]
+          -- Kill all zombies in colliding lanes
+          updatedZombies = map (\z -> if abs (posLane (zombiePos z) - fromIntegral (floor (posLane (zombiePos z)))) < 0.1 && fromIntegral (floor (posLane (zombiePos z))) `elem` collidingLanes
+                                     then Z.hitZombie z (zombieHealth z)
+                                     else z) zs
       in (updatedMowers, Z.clearDead updatedZombies)
 
-    isColliding z m =
-      not (isActive m) &&
-      lawnLane m == posLane (zombiePos z) &&
-      C.checkCollision z m
+    isColliding z m = C.checkCollision z m && abs (posLane (zombiePos z) - lawnLane m) < 0.1
 
 updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombies) =
   let newTime = t + dt
@@ -197,14 +204,16 @@ updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombi
      else SelectingPlant plants newTime plantType sun suns sunTimers movedMowers finalZombies
   where
     processCollisions ms zs =
-      let collisions = [(i, z) | (m, i) <- zip ms [0..], z <- zs, not (isActive m), isColliding z m]
-          updatedMowers = foldl' (\ms' (i, _) -> activateMower i ms') ms collisions
-          updatedZombies = foldl' (\zs' (_, z) -> map (\z' -> if z' == z then trace ("Killing zombie at " ++ show (posCoord (zombiePos z'))) (Z.hitZombie z' (zombieHealth z')) else z') zs') zs collisions
+      let -- Find lanes where any zombie collides with a lawnmower
+          collidingLanes = [lawnLane m | (m, i) <- zip ms [0..], any (\z -> C.checkCollision z m && abs (posLane (zombiePos z) - lawnLane m) < 0.1) zs, not (isActive m)]
+          -- Activate mowers in colliding lanes
+          updatedMowers = foldl' (\ms' i -> activateMower i ms') ms [i | (m, i) <- zip ms [0..], lawnLane m `elem` collidingLanes]
+          -- Kill all zombies in colliding lanes
+          updatedZombies = map (\z -> if abs (posLane (zombiePos z) - fromIntegral (floor (posLane (zombiePos z)))) < 0.1 && fromIntegral (floor (posLane (zombiePos z))) `elem` collidingLanes
+                                     then Z.hitZombie z (zombieHealth z)
+                                     else z) zs
       in (updatedMowers, Z.clearDead updatedZombies)
 
-    isColliding z m =
-      not (isActive m) &&
-      lawnLane m == posLane (zombiePos z) &&
-      C.checkCollision z m
+    isColliding z m = C.checkCollision z m && abs (posLane (zombiePos z) - lawnLane m) < 0.1
 
 updateGame _ GameOver = GameOver
