@@ -29,9 +29,9 @@ renderLawnMower gameTime m =
       bodyColor = if isActive m then makeColor 0.8 0.8 0.8 1.0 else makeColor 0.5 0.5 0.5 1.0  -- Brighter gray when active
       wheelColor = makeColor 0.1 0.1 0.1 1.0  -- Dark gray for wheels
       handleColor = makeColor 0.0 0.5 0.0 1.0  -- Green handle
-      -- Body: Rectangle 40x20
+      -- Body: Rectangle
       body = Color bodyColor $ rectangleSolid 40 20
-      -- Wheels: Two circles, radius 5, offset ±10 from center
+      -- Wheels: Two circles
       wheel1 = Color wheelColor $ Translate (-10) (-8) $ circleSolid 5
       wheel2 = Color wheelColor $ Translate 10 (-8) $ circleSolid 5
       -- Handle: Thin rectangle or line, extending backward

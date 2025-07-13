@@ -22,7 +22,7 @@ generateBullet (Plant Peashooter (x, y) _) time gameMod =
                                   else blank
                              | t' <- bulletTimes
                            ]
-                
+
             in Pictures bulletPics
         GameOver -> blank
         SelectingPlant  {}-> blank

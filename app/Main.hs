@@ -22,9 +22,8 @@ criticalX = -400  -- Left edge of the field (house)
 sunInterval :: Float
 sunInterval = 3
 
--- Для отладки: использовать singleZombie для проверки коллизий
 debugMode :: Bool
-debugMode = False  -- Установите False для двух зомби в каждом ряду
+debugMode = False
 
 baseZombies :: [Z.Zombie]
 baseZombies = if debugMode
@@ -32,20 +31,37 @@ baseZombies = if debugMode
   else [
     -- Lane 0: Two zombies
     Z.Zombie (Position 450 0 40 (450, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 500 0 40 (460, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 500 0 40 (500, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
     -- Lane 1: Two zombies
     Z.Zombie (Position 425 1 40 (425, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 475 1 40 (435, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 475 1 40 (475, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
     -- Lane 2: Two zombies
     Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 450  2 40 (410, 0) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 450 2 40 (450, 0) (30, 30)) 10 (Coloring 1 1 1 1),
     -- Lane 3: Two zombies
     Z.Zombie (Position 425 3 40 (425, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 475 3 40 (435, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 475 3 40 (475, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
     -- Lane 4: Two zombies
     Z.Zombie (Position 450 4 40 (450, 133.2) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 500 4 40 (460, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
+    Z.Zombie (Position 500 4 40 (500, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
   ]
+
+-- Grid definitions for plant placement
+gridX :: [Float]
+gridX = [-360, -280, -200, -120, -40, 40, 120, 200, 280]  -- 9 columns
+
+gridY :: [Float]
+gridY = [-133.2, -66.6, 0, 66.6, 133.2]  -- 5 rows (lanes)
+
+snapToGrid :: (Float, Float) -> (Float, Float)
+snapToGrid (x, y) =
+  let closestX = head $ foldl' (\acc gx -> if abs (gx - x) < abs (head acc - x) then [gx] else acc) [head gridX] gridX
+      closestY = head $ foldl' (\acc gy -> if abs (gy - y) < abs (head acc - y) then [gy] else acc) [head gridY] gridY
+  in (closestX, closestY)
+
+isCellOccupied :: [Plant] -> (Float, Float) -> Bool
+isCellOccupied plants (x, y) =
+  any (\(Plant _ (px, py) _) -> abs (px - x) < 1 && abs (py - y) < 1) plants
 
 main :: IO ()
 main = do
@@ -91,7 +107,7 @@ renderGameState gs = Pictures $ allPictures
     sunPics = map renderSun suns
     cards = renderPlantCards currentSun availableCards
 
-    sunDisplay = Translate 300 250 $ Pictures
+    sunDisplay = Translate 300 300 $ Pictures
       [ Color yellow $ circleSolid 20
       , Color yellow $ Translate 30 (-7) $ Scale 0.3 0.3 $ Text (show currentSun)
       ]
@@ -138,10 +154,16 @@ handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) state =
 
         SelectingPlant plants t plantType sun suns sunTimers mowers zombies
             | y < 200 ->
-                let newPlant = Plant plantType (x, y) 100
-                    card = head $ filter (\c -> cardType c == plantType) availableCards
-                    newSun = sun - cost card
-                in Playing (newPlant : plants) t newSun suns sunTimers mowers zombies
+                let (gridX, gridY) = snapToGrid (x, y)
+                in if isCellOccupied plants (gridX, gridY)
+                   then SelectingPlant plants t plantType sun suns sunTimers mowers zombies  -- Cell occupied, stay in SelectingPlant
+                   else let newPlant = Plant plantType (gridX, gridY) 100
+                            card = head $ filter (\c -> cardType c == plantType) availableCards
+                            newSun = sun - cost card
+                            newSunTimers = if plantType == Sunflower
+                                           then ((gridX, gridY), t) : sunTimers
+                                           else sunTimers
+                        in Playing (newPlant : plants) t newSun (suns ++ generateSun [(newPlant, t)] t suns) newSunTimers mowers zombies
             | y >= 200 -> Playing plants t sun suns sunTimers mowers zombies
             | otherwise -> state
 
@@ -169,7 +191,7 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies) =
       lastSunTime (Plant Sunflower (x,y) _) =
         case lookup (x, y) sunTimers of
           Just tm -> tm
-          Nothing -> 0
+          Nothing -> -1000  -- Allow immediate sun spawn for new sunflowers
 
       updatedTimers = foldl' updateTimer sunTimers
         [ (x,y) | (Plant Sunflower (x,y) _, lastT) <- plantsWithTimers
@@ -195,13 +217,28 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies) =
 
 updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombies) =
   let newTime = t + dt
+      -- Update zombies before collision
       updatedZombies = Z.updateAllZ zombies newTime
+      -- Process collisions, killing all colliding zombies in the same lane
       (newMowers, collidedZombies) = processCollisions mowers updatedZombies
       finalZombies = Z.clearDead collidedZombies
       movedMowers = updateMowers dt newMowers
+      -- Update suns and sun timers
+      sunflowerPlants = [p | p@(Plant Sunflower (x, y) _) <- plants]
+      plantsWithTimers = [(p, lastSunTime p) | p <- sunflowerPlants]
+      generatedSuns = generateSun plantsWithTimers newTime suns
+      allSuns = updateSuns dt (suns ++ generatedSuns)
+      lastSunTime (Plant Sunflower (x,y) _) =
+        case lookup (x, y) sunTimers of
+          Just tm -> tm
+          Nothing -> -1000
+      updatedTimers = foldl' updateTimer sunTimers
+        [ (x,y) | (Plant Sunflower (x,y) _, lastT) <- plantsWithTimers
+                , newTime - lastT >= 10 ]
+      updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
   in if Z.checkFinish finalZombies criticalX
      then GameOver
-     else SelectingPlant plants newTime plantType sun suns sunTimers movedMowers finalZombies
+     else SelectingPlant plants newTime plantType sun allSuns updatedTimers movedMowers finalZombies
   where
     processCollisions ms zs =
       let -- Find lanes where any zombie collides with a lawnmower
