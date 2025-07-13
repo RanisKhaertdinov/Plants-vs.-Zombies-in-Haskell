@@ -24,11 +24,14 @@ sunInterval = 3
 
 baseZombies :: [Z.Zombie]
 baseZombies = [
-    Z.Zombie (Position 400 0 10 (400, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 400 1 10 (400, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    -- Leader at front (center, lane 2)
     Z.Zombie (Position 400 2 10 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 400 3 10 (400, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 400 4 10 (400, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
+    -- Second row, slightly behind (lanes 1 and 3)
+    Z.Zombie (Position 350 1 10 (350, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 350 3 10 (350, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    -- Third row, further behind (lanes 0 and 4)
+    Z.Zombie (Position 300 0 10 (300, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 300 4 10 (300, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
   ]
 
 main :: IO ()
