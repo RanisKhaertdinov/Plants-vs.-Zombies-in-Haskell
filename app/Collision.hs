@@ -1,8 +1,10 @@
-module Collision (checkCollision) where
+module Collision where
 
-import GameTypes
+import GameTypes (Position(..), Zombie(..), posCoord, posLane)
+import LawnMower (LawnMower(..))
 
 checkCollision :: Zombie -> LawnMower -> Bool
 checkCollision z m =
-  abs (fst (posCoord (zombiePos z)) - lawnPos m) < 25 &&  -- Проверка по X-координате
-  posLane (zombiePos z) == lawnLane m
+  let (zx, zy) = posCoord (zombiePos z)
+      my = lawnLane m * 66.6 - 2 * 66.6
+  in abs (zx - lawnPos m) < 30 && abs (zy - my) < 10 && posLane (zombiePos z) == lawnLane m

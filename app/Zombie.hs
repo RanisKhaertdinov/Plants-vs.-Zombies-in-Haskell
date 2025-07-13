@@ -26,7 +26,8 @@ animateAllZ zombies =
 
 updateZombie :: Zombie -> Float -> Zombie
 updateZombie (Zombie (Position start lane speed (x, y) (hx, hy)) hp col) time =
-    Zombie (Position start lane speed (x - speed * time, y) (hx, hy)) hp col
+    let newX = start - speed * time
+    in Zombie (Position start lane speed (newX, y) (hx, hy)) hp col
 
 updateAllZ :: [Zombie] -> Float -> [Zombie]
 updateAllZ zombies time = map (`updateZombie` time) zombies
@@ -34,7 +35,7 @@ updateAllZ zombies time = map (`updateZombie` time) zombies
 checkFinish :: [Zombie] -> Float -> Bool
 checkFinish zombies edge = any isAtEdge zombies
     where
-        isAtEdge (Zombie (Position _ _ _ (x, _) _) _ _) = x <= edge
+        isAtEdge (Zombie (Position _ _ _ (x, _) _) health _) = health > 0 && x <= edge
 
 hitZombie :: Zombie -> Int -> Zombie
 hitZombie (Zombie pos hp col) damage

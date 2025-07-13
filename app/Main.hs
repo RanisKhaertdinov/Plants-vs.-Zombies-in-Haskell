@@ -17,21 +17,27 @@ import qualified Zombie as Z
 
 -- Константы игры
 criticalX :: Float
-criticalX = -400
+criticalX = -400  -- Halfway point of the field
 
 sunInterval :: Float
 sunInterval = 3
 
+-- Для отладки: использовать singleZombie для проверки коллизий
+debugMode :: Bool
+debugMode = False  -- Установите True для тестирования с одним зомби
+
 baseZombies :: [Z.Zombie]
-baseZombies = [
+baseZombies = if debugMode
+  then [Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1)]  -- Один зомби в lane 2 для теста
+  else [
     -- Leader at front (center, lane 2)
-    Z.Zombie (Position 400 2 10 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
     -- Second row, slightly behind (lanes 1 and 3)
-    Z.Zombie (Position 350 1 10 (350, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 350 3 10 (350, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 425 1 40 (425, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 425 3 40 (425, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
     -- Third row, further behind (lanes 0 and 4)
-    Z.Zombie (Position 300 0 10 (300, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 300 4 10 (300, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
+    Z.Zombie (Position 450 0 40 (450, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 450 4 40 (450, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
   ]
 
 main :: IO ()
@@ -134,10 +140,12 @@ handleEvent _ state = state
 updateGame :: Float -> GameState -> GameState
 updateGame dt (Playing plants t sun suns sunTimers mowers) =
   let newTime = t + dt
+      -- Update zombies before collision to get current positions
       zombies = Z.updateAllZ baseZombies newTime
-
-      -- Обрабатываем первое столкновение зомби с косилкой
+      -- Process collisions, killing zombie on contact
       (activatedMowers, updatedZombies) = processCollisions mowers zombies
+      -- Only update surviving zombies for rendering
+      finalZombies = Z.updateAllZ updatedZombies newTime
 
       movedMowers = updateMowers dt activatedMowers
 
@@ -158,7 +166,7 @@ updateGame dt (Playing plants t sun suns sunTimers mowers) =
 
       updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
 
-  in if Z.checkFinish updatedZombies criticalX
+  in if Z.checkFinish finalZombies criticalX
      then GameOver
      else Playing plants newTime sun allSuns updatedTimers movedMowers
   where
@@ -182,8 +190,9 @@ updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers) =
   let newTime = t + dt
       zombies = Z.updateAllZ baseZombies newTime
       (newMowers, updatedZombies) = processCollisions mowers zombies
+      finalZombies = Z.updateAllZ updatedZombies newTime
       movedMowers = updateMowers dt newMowers
-  in if Z.checkFinish updatedZombies criticalX
+  in if Z.checkFinish finalZombies criticalX
      then GameOver
      else SelectingPlant plants newTime plantType sun suns sunTimers movedMowers
   where

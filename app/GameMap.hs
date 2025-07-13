@@ -1,4 +1,4 @@
-module GameMap  where
+module GameMap where
 
 import Graphics.Gloss
 
@@ -6,4 +6,4 @@ import Graphics.Gloss
 generateMap :: IO Picture
 generateMap = do
     Bitmap bmpData <- loadBMP "img/Frontyard.bmp"
-    return (Bitmap bmpData)
+    return $ Translate 0 0 $ Bitmap bmpData
