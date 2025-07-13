@@ -3,6 +3,9 @@ module Zombie
     , animateAllZ
     , updateAllZ
     , checkFinish
+    , hitZombie
+    , clearDead
+    , prettyZombie
     ) where
 
 import Graphics.Gloss
@@ -10,16 +13,15 @@ import GameTypes
 import Data.Maybe (mapMaybe)
 
 animateZombie :: Zombie -> Picture
-animateZombie (Zombie pos _ (Coloring r g b a)) =
+animateZombie (Zombie pos _ _) =
     let (x, y) = posCoord pos
-    in Translate x y (Color (makeColor r g b a) $ circleSolid 30)
+    in Translate x y prettyZombie
 
 animateAllZ :: [Zombie] -> [Picture]
 animateAllZ zombies =
-  [ translate x y (color (makeColor r g b a) (circleSolid 30))
-  | Zombie pos health (Coloring r g b a) <- zombies
+  [ animateZombie z
+  | z@(Zombie pos health _) <- zombies
   , health > 0
-  , let (x, y) = posCoord pos
   ]
 
 updateZombie :: Zombie -> Float -> Zombie
@@ -34,10 +36,9 @@ checkFinish zombies edge = any isAtEdge zombies
     where
         isAtEdge (Zombie (Position _ _ _ (x, _) _) _ _) = x <= edge
 
-
 hitZombie :: Zombie -> Int -> Zombie
 hitZombie (Zombie pos hp col) damage
-    | hp-damage > 0 = Zombie pos (hp-damage) col
+    | hp - damage > 0 = Zombie pos (hp - damage) col
     | otherwise = Zombie pos 0 (Coloring 0 0 0 0.8)
 
 clearDead :: [Zombie] -> [Zombie]
@@ -45,11 +46,6 @@ clearDead [] = []
 clearDead ((Zombie pos hp col):xs)
     | hp > 0   = (Zombie pos hp col) : clearDead xs
     | otherwise = clearDead xs
-
--- generateZombie :: Zombie -> Picture
--- generateZombie (Zombie pos hp (Coloring r g b a))
---     | hp > 0 = Color (makeColor r g b a) $ circleSolid 30
---     | otherwise = blank
 
 prettyZombie :: Picture
 prettyZombie = Pictures

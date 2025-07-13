@@ -10,10 +10,10 @@ import LittleSun
 import PlantCards
 import LawnMower (LawnMower(..), initialLawnMowers, renderLawnMower, updateMowers, activateMower)
 import qualified Collision as C
-import Data.List (partition)
+import Data.List (foldl', find, lookup)
+import Data.Maybe (listToMaybe)
 import GameTypes (Position(..), Zombie(..), Coloring(..), posLane, zombiePos)
 import qualified Zombie as Z
-import Data.List (foldl', find, lookup)
 
 -- Константы игры
 criticalX :: Float
@@ -24,11 +24,11 @@ sunInterval = 3
 
 baseZombies :: [Z.Zombie]
 baseZombies = [
-    Z.Zombie (Position 333 0 10 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 266 1 10 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 200 2 10 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 266 3 10 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 333 4 10 (0, 0) (30, 30)) 10 (Coloring 1 1 1 1)
+    Z.Zombie (Position 400 0 10 (400, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 400 1 10 (400, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 400 2 10 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 400 3 10 (400, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 400 4 10 (400, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
   ]
 
 main :: IO ()
@@ -122,7 +122,8 @@ handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) state =
                     card = head $ filter (\c -> cardType c == plantType) availableCards
                     newSun = sun - cost card
                 in Playing (newPlant : plants) t newSun suns sunTimers mowers
-            | otherwise -> Playing plants t sun suns sunTimers mowers
+            | y >= 200 -> Playing plants t sun suns sunTimers mowers
+            | otherwise -> state
 
         _ -> state
 handleEvent _ state = state
@@ -132,78 +133,71 @@ updateGame dt (Playing plants t sun suns sunTimers mowers) =
   let newTime = t + dt
       zombies = Z.updateAllZ baseZombies newTime
 
-      -- Находим первую неактивную косилку, с которой столкнулся зомби
-      (activatedMowers, remainingZombies) =
-        case findFirstCollision mowers zombies of
-          Nothing -> (mowers, zombies)  -- Нет столкновений
-          Just (mowerIdx, zombiesOnLane) ->
-            let updatedMowers = activateSingleMower mowerIdx mowers
-            in (updatedMowers, filter (\z -> posLane (zombiePos z) /= lawnLane (mowers !! mowerIdx)) zombies)
+      -- Обрабатываем первое столкновение зомби с косилкой
+      (activatedMowers, updatedZombies) = processCollisions mowers zombies
 
       movedMowers = updateMowers dt activatedMowers
 
-        -- Генерация солнц
-        sunflowerPlants = [p | p@(Plant Sunflower (x, y) _) <- plants]
-        plantsWithTimers = [(p, lastSunTime p) | p <- sunflowerPlants]
-        generatedSuns = generateSun plantsWithTimers newTime suns
-        allSuns = updateSuns dt (suns ++ generatedSuns)
+      -- Генерация солнц
+      sunflowerPlants = [p | p@(Plant Sunflower (x, y) _) <- plants]
+      plantsWithTimers = [(p, lastSunTime p) | p <- sunflowerPlants]
+      generatedSuns = generateSun plantsWithTimers newTime suns
+      allSuns = updateSuns dt (suns ++ generatedSuns)
 
-        lastSunTime (Plant Sunflower (x,y) _) =
-          case lookup (x, y) sunTimers of
-            Just tm -> tm
-            Nothing -> 0
+      lastSunTime (Plant Sunflower (x,y) _) =
+        case lookup (x, y) sunTimers of
+          Just tm -> tm
+          Nothing -> 0
 
-        updatedTimers = foldl' updateTimer sunTimers
-          [ (x,y) | (Plant Sunflower (x,y) _, lastT) <- plantsWithTimers
-                  , newTime - lastT >= 10 ]
+      updatedTimers = foldl' updateTimer sunTimers
+        [ (x,y) | (Plant Sunflower (x,y) _, lastT) <- plantsWithTimers
+                , newTime - lastT >= 10 ]
 
-        updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
+      updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
 
-    in if Z.checkFinish remainingZombies criticalX
-       then GameOver
-       else Playing plants newTime sun allSuns updatedTimers movedMowers
-    where
-        findFirstCollision :: [LawnMower] -> [Zombie] -> Maybe (Int, [Zombie])
-        findFirstCollision ms zs =
-          listToMaybe [(i, filter (\z -> posLane (zombiePos z) == lawnLane m) zs)
-                      | (m, i) <- zip ms [0..]
-                      , not (isActive m)
-                      , any (\z -> abs (fst (posCoord (zombiePos z)) - lawnPos m < 25) zs]
-
-        -- Активирует одну косилку по индексу
-        activateSingleMower :: Int -> [LawnMower] -> [LawnMower]
-        activateSingleMower idx mowers =
-          let (before, m:after) = splitAt idx mowers
-          in before ++ [m { isActive = True, lawnSpeed = 800 }] ++ after
-
-  SelectingPlant plants t plantType sun suns sunTimers mowers ->
-    let newTime = t + dt
-        zombies = Z.updateAllZ baseZombies newTime
-        (newMowers, remainingZombies) = processCollisions mowers zombies
-        movedMowers = updateMowers dt newMowers
-    in if Z.checkFinish remainingZombies criticalX
-       then GameOver
-       else SelectingPlant plants newTime plantType sun suns sunTimers movedMowers
-    where
+  in if Z.checkFinish updatedZombies criticalX
+     then GameOver
+     else Playing plants newTime sun allSuns updatedTimers movedMowers
+  where
       processCollisions ms zs =
-        foldl' handleSingleZombie (ms, zs) zs
-        where
-          handleSingleZombie (mowers, zombies) z =
-            case find (isColliding z) mowers of
-              Just m ->
-                ( activateSingle m mowers
-                , filter (\z' -> zombiePos z' /= zombiePos z) zombies
-                )
-              Nothing -> (mowers, zombies)
+        case findFirstCollision ms zs of
+          Just (mowerIdx, zombie) ->
+            let updatedMowers = activateMower mowerIdx ms
+                updatedZombies = map (\z -> if z == zombie then Z.hitZombie z (zombieHealth z) else z) zs
+            in (updatedMowers, updatedZombies)
+          Nothing -> (ms, zs)
 
-          isColliding z m =
-            not (isActive m) &&
-            lawnLane m == posLane (zombiePos z) &&
-            C.checkCollision z m
+      findFirstCollision ms zs =
+        listToMaybe [(i, z) | (m, i) <- zip ms [0..], z <- zs, not (isActive m), isColliding z m]
 
-          activateSingle target mowers =
-            map (\m -> if m == target
-                      then m { isActive = True, lawnSpeed = 800 }
-                      else m) mowers
+      isColliding z m =
+        not (isActive m) &&
+        lawnLane m == posLane (zombiePos z) &&
+        C.checkCollision z m
 
-  GameOver -> GameOver  -- Явная обработка состояния GameOver
+updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers) =
+  let newTime = t + dt
+      zombies = Z.updateAllZ baseZombies newTime
+      (newMowers, updatedZombies) = processCollisions mowers zombies
+      movedMowers = updateMowers dt newMowers
+  in if Z.checkFinish updatedZombies criticalX
+     then GameOver
+     else SelectingPlant plants newTime plantType sun suns sunTimers movedMowers
+  where
+    processCollisions ms zs =
+      case findFirstCollision ms zs of
+        Just (mowerIdx, zombie) ->
+          let updatedMowers = activateMower mowerIdx ms
+              updatedZombies = map (\z -> if z == zombie then Z.hitZombie z (zombieHealth z) else z) zs
+          in (updatedMowers, updatedZombies)
+        Nothing -> (ms, zs)
+
+    findFirstCollision ms zs =
+      listToMaybe [(i, z) | (m, i) <- zip ms [0..], z <- zs, not (isActive m), isColliding z m]
+
+    isColliding z m =
+      not (isActive m) &&
+      lawnLane m == posLane (zombiePos z) &&
+      C.checkCollision z m
+
+updateGame _ GameOver = GameOver

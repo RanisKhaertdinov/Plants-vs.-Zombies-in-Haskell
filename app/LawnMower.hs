@@ -25,7 +25,7 @@ renderLawnMower (LawnMower lane pos active _) =
     Color (if active then makeColor 0.9 0.9 0.1 1.0 else makeColor 0.8 0.1 0.1 1.0) $
     rectangleSolid 50 30
 
-activateSingleMower :: Int -> [LawnMower] -> [LawnMower]
-activateSingleMower idx mowers =
+activateMower :: Int -> [LawnMower] -> [LawnMower]
+activateMower idx mowers =
   let (before, m:after) = splitAt idx mowers
   in before ++ [m { isActive = True, lawnSpeed = 800 }] ++ after
