@@ -24,7 +24,7 @@ sunInterval = 3
 
 -- Для отладки: использовать singleZombie для проверки коллизий
 debugMode :: Bool
-debugMode = False -- Установите False для двух зомби в каждом ряду
+debugMode = False  -- Установите False для двух зомби в каждом ряду
 
 baseZombies :: [Z.Zombie]
 baseZombies = if debugMode
@@ -38,7 +38,7 @@ baseZombies = if debugMode
     Z.Zombie (Position 475 1 40 (435, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
     -- Lane 2: Two zombies
     Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 450 2 40 (410, 0) (30, 30)) 10 (Coloring 1 1 1 1),
+    Z.Zombie (Position 450  2 40 (410, 0) (30, 30)) 10 (Coloring 1 1 1 1),
     -- Lane 3: Two zombies
     Z.Zombie (Position 425 3 40 (425, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
     Z.Zombie (Position 475 3 40 (435, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
@@ -101,7 +101,7 @@ renderGameState gs = Pictures $ allPictures
       SelectingPlant _ _ _ _ _ _ mowers _ -> mowers
       GameOver -> []
 
-    lawnMowerPics = map renderLawnMower lawnMowers
+    lawnMowerPics = map (renderLawnMower currentTime) lawnMowers
 
     allPictures = case gs of
       GameOver ->
@@ -186,7 +186,7 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies) =
           -- Activate mowers in colliding lanes
           updatedMowers = foldl' (\ms' i -> activateMower i ms') ms [i | (m, i) <- zip ms [0..], lawnLane m `elem` collidingLanes]
           -- Kill all zombies in colliding lanes
-          updatedZombies = map (\z -> if abs (posLane (zombiePos z) - fromIntegral (floor (posLane (zombiePos z)))) < 0.1 && fromIntegral (floor (posLane (zombiePos z))) `elem` collidingLanes
+          updatedZombies = map (\z -> if posLane (zombiePos z) `elem` collidingLanes
                                      then Z.hitZombie z (zombieHealth z)
                                      else z) zs
       in (updatedMowers, Z.clearDead updatedZombies)
@@ -209,7 +209,7 @@ updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombi
           -- Activate mowers in colliding lanes
           updatedMowers = foldl' (\ms' i -> activateMower i ms') ms [i | (m, i) <- zip ms [0..], lawnLane m `elem` collidingLanes]
           -- Kill all zombies in colliding lanes
-          updatedZombies = map (\z -> if abs (posLane (zombiePos z) - fromIntegral (floor (posLane (zombiePos z)))) < 0.1 && fromIntegral (floor (posLane (zombiePos z))) `elem` collidingLanes
+          updatedZombies = map (\z -> if posLane (zombiePos z) `elem` collidingLanes
                                      then Z.hitZombie z (zombieHealth z)
                                      else z) zs
       in (updatedMowers, Z.clearDead updatedZombies)
