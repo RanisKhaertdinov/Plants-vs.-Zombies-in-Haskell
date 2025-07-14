@@ -5,7 +5,7 @@ import Graphics.Gloss.Interface.Pure.Game
 import GameMap
 import Plant
 import GameStates
-import Bullet
+import qualified Bullet as B
 import LittleSun
 import PlantCards
 import LawnMower (LawnMower(..), initialLawnMowers, renderLawnMower, updateMowers, activateMower)
@@ -67,7 +67,7 @@ main :: IO ()
 main = do
     map <- generateMap
     play (InWindow "PvZ" (800, 600) (50, 50)) black 60
-        (Playing [] 0 500 [] [] initialLawnMowers baseZombies)
+        (Playing [] 0 500 [] [] initialLawnMowers baseZombies [])
         (\gs -> Pictures [map, renderGameState gs])
         handleEvent
         updateGame
@@ -76,34 +76,40 @@ renderGameState :: GameState -> Picture
 renderGameState gs = Pictures $ allPictures
   where
     currentTime = case gs of
-      Playing _ t _ _ _ _ _ -> t
-      SelectingPlant _ t _ _ _ _ _ _ -> t
+      Playing _ t _ _ _ _ _ _ -> t
+      SelectingPlant _ t _ _ _ _ _ _ _ -> t
       GameOver -> 0
 
     plants = case gs of
-      Playing ps _ _ _ _ _ _ -> ps
-      SelectingPlant ps _ _ _ _ _ _ _ -> ps
+      Playing ps _ _ _ _ _ _ _ -> ps
+      SelectingPlant ps _ _ _ _ _ _ _ _ -> ps
       GameOver -> []
 
     suns = case gs of
-      Playing _ _ _ suns _ _ _ -> suns
-      SelectingPlant _ _ _ _ suns _ _ _ -> suns
+      Playing _ _ _ suns _ _ _ _ -> suns
+      SelectingPlant _ _ _ _ suns _ _ _ _ -> suns
       GameOver -> []
 
     currentSun = case gs of
-      Playing _ _ sun _ _ _ _ -> sun
-      SelectingPlant _ _ _ sun _ _ _ _ -> sun
+      Playing _ _ sun _ _ _ _ _ -> sun
+      SelectingPlant _ _ _ sun _ _ _ _ _ -> sun
       GameOver -> 0
 
     zombies = case gs of
-      Playing _ _ _ _ _ _ zs -> zs
-      SelectingPlant _ _ _ _ _ _ _ zs -> zs
+      Playing _ _ _ _ _ _ zs _ -> zs
+      SelectingPlant _ _ _ _ _ _ _ zs _ -> zs
+      GameOver -> []
+    
+    bullets = case gs of
+      Playing _ _ _ _ _ _ _ bs -> bs
+      SelectingPlant _ _ _ _ _ _ _ _ bs -> bs
       GameOver -> []
 
     picZ = Z.animateAllZ zombies
 
     plantPics = map generatePlant plants
-    --bulletPics = map (\p -> generateBullet p currentTime gs) plants
+    bulletPics = B.animateAllB bullets
+    -- bulletPics = map (\p -> generateBullet p currentTime gs) plants
     sunPics = map renderSun suns
     cards = renderPlantCards currentSun availableCards
 
@@ -113,8 +119,8 @@ renderGameState gs = Pictures $ allPictures
       ]
 
     lawnMowers = case gs of
-      Playing _ _ _ _ _ mowers _ -> mowers
-      SelectingPlant _ _ _ _ _ _ mowers _ -> mowers
+      Playing _ _ _ _ _ mowers _ _ -> mowers
+      SelectingPlant _ _ _ _ _ _ mowers _ _ -> mowers
       GameOver -> []
 
     lawnMowerPics = map (renderLawnMower currentTime) lawnMowers
@@ -124,11 +130,11 @@ renderGameState gs = Pictures $ allPictures
         [ sunDisplay
         , cards
         , gameOverText
-        ] ++ plantPics ++ sunPics ++ picZ ++ lawnMowerPics
+        ] ++ plantPics ++ bulletPics ++ sunPics ++ picZ ++ lawnMowerPics
       _ ->
         [ sunDisplay
         , cards
-        ] ++ plantPics ++ sunPics ++ picZ ++ lawnMowerPics
+        ] ++ plantPics ++ bulletPics ++ sunPics ++ picZ ++ lawnMowerPics
 
 gameOverText :: Picture
 gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
@@ -136,49 +142,52 @@ gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
 handleEvent :: Event -> GameState -> GameState
 handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) state =
     case state of
-        Playing plants t sun suns sunTimers mowers zombies
+        Playing plants t sun suns sunTimers mowers zombies bullets
             | y < 200 ->
                 let clickedSuns = filter (\s -> isSunClicked s (x, y)) suns
                     remainingSuns = filter (\s -> not (isSunClicked s (x, y))) suns
                     collectedValue = sum (map value clickedSuns)
-                in Playing plants t (sun + collectedValue) remainingSuns sunTimers mowers zombies
+                in Playing plants t (sun + collectedValue) remainingSuns sunTimers mowers zombies bullets
             | y > 200 && y < 350 ->
                 let idx = floor ((x + 350) / 120)
                 in if idx >= 0 && idx < length availableCards
                    then let card = availableCards !! idx
                         in if sun >= cost card
-                           then SelectingPlant plants t (cardType card) sun suns sunTimers mowers zombies
+                           then SelectingPlant plants t (cardType card) sun suns sunTimers mowers zombies bullets
                            else state
                    else state
             | otherwise -> state
 
-        SelectingPlant plants t plantType sun suns sunTimers mowers zombies
+        SelectingPlant plants t plantType sun suns sunTimers mowers zombies bullets
             | y < 200 ->
                 let (gridX, gridY) = snapToGrid (x, y)
                 in if isCellOccupied plants (gridX, gridY)
-                   then SelectingPlant plants t plantType sun suns sunTimers mowers zombies  -- Cell occupied, stay in SelectingPlant
+                   then SelectingPlant plants t plantType sun suns sunTimers mowers zombies bullets  -- Cell occupied, stay in SelectingPlant
                    else let newPlant = Plant plantType (gridX, gridY) 100
                             card = head $ filter (\c -> cardType c == plantType) availableCards
                             newSun = sun - cost card
                             newSunTimers = if plantType == Sunflower
                                            then ((gridX, gridY), t) : sunTimers
                                            else sunTimers
-                        in Playing (newPlant : plants) t newSun (suns ++ generateSun [(newPlant, t)] t suns) newSunTimers mowers zombies
-            | y >= 200 -> Playing plants t sun suns sunTimers mowers zombies
+                        in Playing (newPlant : plants) t newSun (suns ++ generateSun [(newPlant, t)] t suns) newSunTimers mowers zombies bullets
+            | y >= 200 -> Playing plants t sun suns sunTimers mowers zombies bullets
             | otherwise -> state
 
         _ -> state
 handleEvent _ state = state
 
 updateGame :: Float -> GameState -> GameState
-updateGame dt (Playing plants t sun suns sunTimers mowers zombies) =
+updateGame dt (Playing plants t sun suns sunTimers mowers zombies bullets) =
   let newTime = t + dt
       -- Update zombies before collision
       updatedZombies = Z.updateAllZ zombies newTime
       -- Process collisions, killing all colliding zombies in the same lane
       (activatedMowers, collidedZombies) = processCollisions mowers updatedZombies
       -- Remove dead zombies
-      finalZombies = Z.clearDead collidedZombies
+      prefinalZombies = Z.clearDead collidedZombies
+
+      finalZombies = Z.clearDead(B.hitAllZAllB prefinalZombies (B.updateAllB bullets dt))
+      nbullets = B.exhaustBullets (B.conjureAll plants newTime (B.updateAllB bullets dt)) zombies
 
       movedMowers = updateMowers dt activatedMowers
 
@@ -200,7 +209,7 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies) =
       updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
   in if Z.checkFinish finalZombies criticalX
      then GameOver
-     else Playing plants newTime sun allSuns updatedTimers movedMowers finalZombies
+     else Playing plants newTime sun allSuns updatedTimers movedMowers finalZombies nbullets
   where
     processCollisions ms zs =
       let -- Find lanes where any zombie collides with a lawnmower
@@ -215,7 +224,7 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies) =
 
     isColliding z m = C.checkCollision z m && abs (posLane (zombiePos z) - lawnLane m) < 0.1
 
-updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombies) =
+updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombies bullets) =
   let newTime = t + dt
       -- Update zombies before collision
       updatedZombies = Z.updateAllZ zombies newTime
@@ -238,7 +247,7 @@ updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombi
       updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
   in if Z.checkFinish finalZombies criticalX
      then GameOver
-     else SelectingPlant plants newTime plantType sun allSuns updatedTimers movedMowers finalZombies
+     else SelectingPlant plants newTime plantType sun allSuns updatedTimers movedMowers finalZombies bullets
   where
     processCollisions ms zs =
       let -- Find lanes where any zombie collides with a lawnmower

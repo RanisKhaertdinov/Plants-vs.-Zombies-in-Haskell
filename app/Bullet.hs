@@ -14,6 +14,7 @@ import Plant
 import GameStates
 import GameTypes
 import Data.Fixed (mod')
+import GHC.IO.Buffer (Buffer)
 
 
 -- generateBullet :: Plant -> Float -> GameState-> Picture
@@ -39,16 +40,19 @@ import Data.Fixed (mod')
 
 
 animateBullet :: Bullet -> Picture
-animateBullet (Bullet (Position start lane speed (x,y) _) _ (Coloring r g b a))
-    = Translate x ((lane-2)*66.6) (Color (makeColor r g b a) $ circleSolid 5)
+animateBullet (Bullet pos _ (Coloring r g b a)) =
+    let (x, y) = posCoord pos
+    in Translate x y (Color (makeColor r g b a) $ circleSolid 5)
 
 animateAllB :: [Bullet] -> [Picture]
-animateAllB [] = []
-animateAllB (x:xs) = animateBullet x : animateAllB xs
+animateAllB bullets =
+  [ animateBullet b
+  | b@(Bullet pos dmg _) <- bullets
+  ]
 
 updateBullet :: Bullet -> Float -> Bullet
-updateBullet (Bullet (Position start lane speed _ (hx, hy)) dmg (Coloring r g b a)) time
-    = Bullet (Position start lane speed (- (speed * time) + start, (lane-2)*66.6) (hx, hy)) dmg (Coloring r g b a)
+updateBullet (Bullet (Position start lane speed (x, y) (hx, hy)) dmg (Coloring r g b a)) dt
+    = Bullet (Position start lane speed ((speed * dt) + start, y) (hx, hy)) dmg (Coloring r g b a)
 
 updateAllB :: [Bullet] -> Float -> [Bullet]
 updateAllB [] _ = []
@@ -68,21 +72,31 @@ posToLane :: Float -> Float
 posToLane y = roundFloat ((y/66.6)+2)
 
 conjureBullet :: Plant -> Float -> [Bullet] -> [Bullet]
-conjureBullet (Plant Peashooter (x, y) _) time bullets
-    | mod' time 2 == 0     = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 3 (Coloring 0 1 0 1) : bullets
-    | otherwise             = bullets
+conjureBullet (Plant Peashooter (x, y) _) time bullets = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 3 (Coloring 0 1 0 1) : bullets
+    -- | otherwise             = bullets
 conjureBullet _ _ b = b
 
 conjureAll :: [Plant] -> Float -> [Bullet] -> [Bullet]
 conjureAll [] _ bullets = bullets
 conjureAll (x:xs) t bullets = conjureAll xs t (conjureBullet x t bullets)
 
+getLane :: Bullet -> Float
+getLane (Bullet (Position _ l _ _ _) _ _) = l
 
-
+getX :: Bullet -> Float
+getX (Bullet (Position _ _ _ (x,_) _) _ _) = x
 
 checkCollision :: Zombie -> Bullet -> Bool
-checkCollision (Zombie (Position _ lane1 _ (x1, _) (hx1, _)) _ _) (Bullet (Position _ lane2 _ (x2, _) (hx2, _)) _ _)
-    = lane1 == lane2 && x2 - x1 < 0
+checkCollision z b =
+  let (zx, zy) = posCoord (zombiePos z)
+      my = getLane b * 66.6 - 2 * 66.6
+      laneDiff = abs (posLane (zombiePos z) - getLane b)
+      collides = abs (zx - getX b) < 10 && abs (zy - my) < 50 && laneDiff < 0.1
+  in collides
+
+-- checkCollision :: Zombie -> Bullet -> Bool
+-- checkCollision (Zombie (Position _ lane1 _ (x1, _) (hx1, _)) _ _) (Bullet (Position _ lane2 _ (x2, _) (hx2, _)) _ _)
+--     = lane1 == lane2 && x2 - x1 < 0
 
 checkAllB :: [Zombie] -> Bullet -> Bool
 checkAllB [] _ = False
