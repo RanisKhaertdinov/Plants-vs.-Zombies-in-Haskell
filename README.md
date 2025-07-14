@@ -1,5 +1,9 @@
 # Plants vs. Zombies in Haskell
 
+![Gameplay Screenshot](img/gameplay.jpg)
+
+*A screenshot of the game in action.*
+
 ## Gameplay
 - **Goal:** Stop the wave of zombies by planting plants on the field.
 - **Plants:**
