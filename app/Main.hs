@@ -17,7 +17,7 @@ import qualified Zombie as Z
 
 -- Константы игры
 criticalX :: Float
-criticalX = -400  -- Left edge of the field (house)
+criticalX = -350  -- Left edge of the field (house)
 
 sunInterval :: Float
 sunInterval = 3
@@ -66,7 +66,7 @@ isCellOccupied plants (x, y) =
 main :: IO ()
 main = do
     map <- generateMap
-    play (InWindow "PvZ" (800, 600) (50, 50)) black 60
+    play (InWindow "PvZ" (1000, 800) (50, 50)) black 60
         (Playing [] 0 500 [] [] initialLawnMowers baseZombies [])
         (\gs -> Pictures [map, renderGameState gs])
         handleEvent
@@ -186,8 +186,9 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies bullets) =
       -- Remove dead zombies
       prefinalZombies = Z.clearDead collidedZombies
 
-      finalZombies = Z.clearDead(B.hitAllZAllB prefinalZombies (B.updateAllB bullets dt))
+      pfinalZombies = B.hitAllZAllB prefinalZombies (B.updateAllB bullets dt)
       nbullets = B.exhaustBullets (B.conjureAll plants newTime (B.updateAllB bullets dt)) zombies
+      finalZombies = Z.clearDead pfinalZombies
 
       movedMowers = updateMowers dt activatedMowers
 
@@ -230,7 +231,13 @@ updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombi
       updatedZombies = Z.updateAllZ zombies newTime
       -- Process collisions, killing all colliding zombies in the same lane
       (newMowers, collidedZombies) = processCollisions mowers updatedZombies
-      finalZombies = Z.clearDead collidedZombies
+      prefinalZombies = Z.clearDead collidedZombies
+
+      pfinalZombies = B.hitAllZAllB prefinalZombies (B.updateAllB bullets dt)
+      nbullets = B.exhaustBullets (B.conjureAll plants newTime (B.updateAllB bullets dt)) zombies
+      finalZombies = Z.clearDead pfinalZombies
+
+
       movedMowers = updateMowers dt newMowers
       -- Update suns and sun timers
       sunflowerPlants = [p | p@(Plant Sunflower (x, y) _) <- plants]
@@ -247,7 +254,7 @@ updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombi
       updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
   in if Z.checkFinish finalZombies criticalX
      then GameOver
-     else SelectingPlant plants newTime plantType sun allSuns updatedTimers movedMowers finalZombies bullets
+     else SelectingPlant plants newTime plantType sun allSuns updatedTimers movedMowers finalZombies nbullets
   where
     processCollisions ms zs =
       let -- Find lanes where any zombie collides with a lawnmower

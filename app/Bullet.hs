@@ -54,26 +54,32 @@ updateBullet :: Bullet -> Float -> Bullet
 updateBullet (Bullet (Position start lane speed (x, y) (hx, hy)) dmg (Coloring r g b a)) dt
     = Bullet (Position start lane speed ((speed * dt) + x, y) (hx, hy)) dmg (Coloring r g b a)
 
+tooLong :: Bullet -> Bool
+tooLong (Bullet (Position start lane speed (x, y) (hx, hy)) dmg (Coloring r g b a)) 
+    = x > 500
+
 updateAllB :: [Bullet] -> Float -> [Bullet]
 updateAllB [] _ = []
-updateAllB (x:xs) time = updateBullet x time : updateAllB xs time
+updateAllB (x:xs) time 
+    | tooLong x = updateAllB xs time
+    | otherwise = updateBullet x time : updateAllB xs time
 
 roundFloat :: Float -> Float
-roundFloat x = x - rem x
-    where
-        rem :: Float -> Float
-        rem x
-            | x < 0             = rem (x+1)
-            | x >= 1            = rem (x-1)
-            | x >= 0 && x < 1   = x
-            | otherwise         = x
+roundFloat x = x - bRem x
+
+bRem :: Float -> Float
+bRem x
+    | x < 0             = bRem (x+1)
+    | x >= 1            = bRem (x-1)
+    | x >= 0 && x < 1   = x
+    | otherwise         = x
 
 posToLane :: Float -> Float
 posToLane y = roundFloat ((y/66.6)+2)
 
 conjureBullet :: Plant -> Float -> [Bullet] -> [Bullet]
 conjureBullet (Plant Peashooter (x, y) _) time bullets
-    | (roundFloat time) `mod'` 3 == 0     = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 3 (Coloring 0 1 0 1) : bullets
+    | bRem time < 0.1/3-0.01     = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 3 (Coloring 0 1 0 1) : bullets
     | otherwise             = bullets
 conjureBullet _ _ b = b
 
