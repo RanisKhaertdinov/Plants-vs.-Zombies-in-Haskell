@@ -52,7 +52,7 @@ animateAllB bullets =
 
 updateBullet :: Bullet -> Float -> Bullet
 updateBullet (Bullet (Position start lane speed (x, y) (hx, hy)) dmg (Coloring r g b a)) dt
-    = Bullet (Position start lane speed ((speed * dt) + start, y) (hx, hy)) dmg (Coloring r g b a)
+    = Bullet (Position start lane speed ((speed * dt) + x, y) (hx, hy)) dmg (Coloring r g b a)
 
 updateAllB :: [Bullet] -> Float -> [Bullet]
 updateAllB [] _ = []
@@ -72,8 +72,9 @@ posToLane :: Float -> Float
 posToLane y = roundFloat ((y/66.6)+2)
 
 conjureBullet :: Plant -> Float -> [Bullet] -> [Bullet]
-conjureBullet (Plant Peashooter (x, y) _) time bullets = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 3 (Coloring 0 1 0 1) : bullets
-    -- | otherwise             = bullets
+conjureBullet (Plant Peashooter (x, y) _) time bullets
+    | (roundFloat time) `mod'` 3 == 0     = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 3 (Coloring 0 1 0 1) : bullets
+    | otherwise             = bullets
 conjureBullet _ _ b = b
 
 conjureAll :: [Plant] -> Float -> [Bullet] -> [Bullet]
