@@ -3,6 +3,7 @@ module GameTypes
     , Zombie(..)
     , Coloring(..)
     , LawnMower(..)
+    , Bullet (..)
     ) where
 
 type Lane = Float
@@ -41,4 +42,10 @@ data Zombie = Zombie
     { zombiePos :: Position
     , zombieHealth :: Health
     , zombieColoring :: Coloring
+    } deriving (Eq, Show)
+
+data Bullet = Bullet
+    { bulletPos :: Position
+    , bulletDamage :: Health
+    , bulletColoring :: Coloring
     } deriving (Eq, Show)

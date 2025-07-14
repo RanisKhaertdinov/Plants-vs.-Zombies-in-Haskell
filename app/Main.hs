@@ -12,7 +12,7 @@ import LawnMower (LawnMower(..), initialLawnMowers, renderLawnMower, updateMower
 import qualified Collision as C
 import Data.List (foldl', find, lookup)
 import Data.Maybe (listToMaybe)
-import GameTypes (Position(..), Zombie(..), Coloring(..), posLane, zombiePos)
+import GameTypes (Position(..), Zombie(..), Bullet(..), Coloring(..), posLane, zombiePos)
 import qualified Zombie as Z
 
 -- Константы игры
@@ -103,7 +103,7 @@ renderGameState gs = Pictures $ allPictures
     picZ = Z.animateAllZ zombies
 
     plantPics = map generatePlant plants
-    bulletPics = map (\p -> generateBullet p currentTime gs) plants
+    --bulletPics = map (\p -> generateBullet p currentTime gs) plants
     sunPics = map renderSun suns
     cards = renderPlantCards currentSun availableCards
 
@@ -124,11 +124,11 @@ renderGameState gs = Pictures $ allPictures
         [ sunDisplay
         , cards
         , gameOverText
-        ] ++ plantPics ++ bulletPics ++ sunPics ++ picZ ++ lawnMowerPics
+        ] ++ plantPics ++ sunPics ++ picZ ++ lawnMowerPics
       _ ->
         [ sunDisplay
         , cards
-        ] ++ plantPics ++ bulletPics ++ sunPics ++ picZ ++ lawnMowerPics
+        ] ++ plantPics ++ sunPics ++ picZ ++ lawnMowerPics
 
 gameOverText :: Picture
 gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"

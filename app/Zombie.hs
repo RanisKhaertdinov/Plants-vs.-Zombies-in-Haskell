@@ -37,10 +37,12 @@ checkFinish zombies edge = any isAtEdge zombies
     where
         isAtEdge (Zombie (Position _ _ _ (x, _) _) health _) = health > 0 && x <= edge
 
+
 hitZombie :: Zombie -> Int -> Zombie
 hitZombie (Zombie pos hp col) damage
-    | hp - damage > 0 = Zombie pos (hp - damage) col
+    | hp-damage > 0 = Zombie pos (hp-damage) col
     | otherwise = Zombie pos 0 (Coloring 0 0 0 0.8)
+
 
 clearDead :: [Zombie] -> [Zombie]
 clearDead [] = []
