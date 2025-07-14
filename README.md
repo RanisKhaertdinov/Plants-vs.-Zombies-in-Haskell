@@ -1,52 +1,47 @@
- # Plants vs. Zombies in Haskell
+# Plants vs. Zombies in Haskell
 
-A simple Plants vs. Zombies clone implemented in Haskell using the [Gloss](http://hackage.haskell.org/package/gloss) graphics library.
+## Gameplay
+- **Goal:** Stop the wave of zombies by planting plants on the field.
+- **Plants:**
+  - Sunflower — generates sun.
+  - Peashooter — shoots at zombies.
+  - WallNut — blocks zombies.
+- **Sun:** Click on sun to collect it and spend it to plant new plants.
+- **Zombies:** Move from right to left along the lanes. If a zombie reaches the left edge, the game is over.
+- **Lawnmowers:** Automatically destroy zombies if they reach the start of the lane.
+
+## Controls
+- Click on sun — collect sun.
+- Click on a plant card — select a plant.
+- Click on the field — plant the selected plant (if you have enough sun and the cell is free).
+
+## Build and Run
+
+1. Install [Stack](https://docs.haskellstack.org/en/stable/README/):
+   ```
+   curl -sSL https://get.haskellstack.org/ | sh
+   ```
+2. Clone the repository and go to the project folder.
+3. Build the project:
+   ```
+   stack build
+   ```
+4. Run the game:
+   ```
+   stack run
+   ```
+
+## Dependencies
+- [gloss](http://hackage.haskell.org/package/gloss)
+- random
 
 ## Features
-- Place different types of plants on the field
-- Animated zombies moving towards your base
-- Sunflowers generate visual sun animations
-- Peashooters shoot bullets at zombies
-- WallNuts block zombies
-- Card-based plant selection system
-- Sun collection system with wallet
-- Game Over state when a zombie reaches the left edge
+- Vector graphics for all objects (plants, zombies, sun).
+- Zombies stop and bite plants.
+- Sun appears near sunflowers, falls down, and can be collected by clicking.
+- Lawnmowers destroy zombies if they reach the start of the lane.
 
-## Setup
+---
 
-### Prerequisites
-- [Stack](https://docs.haskellstack.org/en/stable/README/) or [Cabal](https://www.haskell.org/cabal/)
-- GHC (tested with 9.6.7)
+**Have fun!**
 
-### Installation
-Clone the repository:
-```sh
-git clone <repo-url>
-cd Plants-vs.-Zombies-in-Haskell
-```
-
-Install dependencies and build:
-```sh
-stack build
-# or, with cabal:
-cabal build
-```
-
-## Running the Game
-With Stack:
-```sh
-stack run
-```
-With Cabal:
-```sh
-cabal run
-```
-
-
-## Notes
-- This is a simplified educational project and does not implement all features of the original PvZ game.
-- The game uses a wallet system where you start with 500 sun and can collect more by clicking in the sun area.
-- Contributions and suggestions are welcome!
-
-## License
-See [LICENSE](LICENSE).
