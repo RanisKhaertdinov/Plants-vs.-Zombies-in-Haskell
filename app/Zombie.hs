@@ -1,7 +1,7 @@
 module Zombie
     ( Zombie(..)
     , animateAllZ
-    , updateAllZ
+    , updateZombieStep
     , checkFinish
     , hitZombie
     , clearDead
@@ -24,13 +24,10 @@ animateAllZ zombies =
   , health > 0
   ]
 
-updateZombie :: Zombie -> Float -> Zombie
-updateZombie (Zombie (Position start lane speed (x, y) (hx, hy)) hp col) time =
-    let newX = start - speed * time
+updateZombieStep :: Zombie -> Float -> Zombie
+updateZombieStep (Zombie (Position start lane speed (x, y) (hx, hy)) hp col) dt =
+    let newX = x - speed * dt
     in Zombie (Position start lane speed (newX, y) (hx, hy)) hp col
-
-updateAllZ :: [Zombie] -> Float -> [Zombie]
-updateAllZ zombies time = map (`updateZombie` time) zombies
 
 checkFinish :: [Zombie] -> Float -> Bool
 checkFinish zombies edge = any isAtEdge zombies

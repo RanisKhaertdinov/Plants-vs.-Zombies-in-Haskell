@@ -5,7 +5,7 @@ import Graphics.Gloss
 
 
 data Plant  -- (dx, dy) health
-    = Plant PlantType (Float, Float) Int
+    = Plant PlantType (Float, Float) Float
     deriving (Show)
 
 data PlantType

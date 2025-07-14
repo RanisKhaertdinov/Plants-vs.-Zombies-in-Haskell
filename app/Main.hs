@@ -10,10 +10,11 @@ import LittleSun
 import PlantCards
 import LawnMower (LawnMower(..), initialLawnMowers, renderLawnMower, updateMowers, activateMower)
 import qualified Collision as C
-import Data.List (foldl', find, lookup)
+import Data.List (foldl', find, findIndex, lookup)
 import Data.Maybe (listToMaybe)
 import GameTypes (Position(..), Zombie(..), Bullet(..), Coloring(..), posLane, zombiePos)
 import qualified Zombie as Z
+import System.Random (mkStdGen, randomRs)
 
 -- Константы игры
 criticalX :: Float
@@ -26,24 +27,14 @@ debugMode :: Bool
 debugMode = False
 
 baseZombies :: [Z.Zombie]
-baseZombies = if debugMode
-  then [Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1)]  -- Один зомби в lane 2
-  else [
-    -- Lane 0: Two zombies
-    Z.Zombie (Position 450 0 40 (450, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 500 0 40 (500, -133.2) (30, 30)) 10 (Coloring 1 1 1 1),
-    -- Lane 1: Two zombies
-    Z.Zombie (Position 425 1 40 (425, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 475 1 40 (475, -66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    -- Lane 2: Two zombies
-    Z.Zombie (Position 400 2 40 (400, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 450 2 40 (450, 0) (30, 30)) 10 (Coloring 1 1 1 1),
-    -- Lane 3: Two zombies
-    Z.Zombie (Position 425 3 40 (425, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 475 3 40 (475, 66.6) (30, 30)) 10 (Coloring 1 1 1 1),
-    -- Lane 4: Two zombies
-    Z.Zombie (Position 450 4 40 (450, 133.2) (30, 30)) 10 (Coloring 1 1 1 1),
-    Z.Zombie (Position 500 4 40 (500, 133.2) (30, 30)) 10 (Coloring 1 1 1 1)
+baseZombies =
+  [ Z.Zombie (Position x lane speed (x, gridY !! laneIdx) (30, 30)) hp (Coloring 1 1 1 1)
+  | (x, laneIdx, speed, hp) <-
+      [ (900, 0, 40, 100), (950, 1, 35, 100), (1000, 2, 45, 100), (1050, 3, 38, 100), (1100, 4, 42, 100)
+      , (1200, 0, 40, 100), (1250, 1, 35, 100), (1300, 2, 45, 100), (1350, 3, 38, 100), (1400, 4, 42, 100)
+      , (1600, 0, 45, 150), (1650, 1, 45, 150), (1700, 2, 45, 150), (1750, 3, 45, 150), (1800, 4, 45, 150)
+      ]
+  , let lane = fromIntegral laneIdx
   ]
 
 -- Grid definitions for plant placement
@@ -62,6 +53,27 @@ snapToGrid (x, y) =
 isCellOccupied :: [Plant] -> (Float, Float) -> Bool
 isCellOccupied plants (x, y) =
   any (\(Plant _ (px, py) _) -> abs (px - x) < 1 && abs (py - y) < 1) plants
+
+findPlantToBite :: Z.Zombie -> [Plant] -> Maybe Int
+findPlantToBite (Z.Zombie (Position _ lane _ (zx, _) (w, _)) _ _) plants =
+  let laneIdx = round lane
+      isTouching (Plant _ (px, py) health) =
+        health > 0.0 && abs (py - gridY !! laneIdx) < 1 && (zx - px) < (w/2 + 20) && (zx - px) > 0
+  in findIndex isTouching plants
+
+bitePlantsByZombies :: [Plant] -> [Z.Zombie] -> Float -> Float -> ([Plant], [Z.Zombie])
+bitePlantsByZombies plants zombies dt newTime =
+  let damagePerSecond = 20.0 in
+  foldl' (\(ps, zs) z ->
+    case findPlantToBite z ps of
+      Just idx ->
+        let (before, Plant t pos h:after) = splitAt idx ps
+            newHealth = h - (damagePerSecond * dt)
+            newPlant = Plant t pos (max 0.0 newHealth)
+        in (before ++ [newPlant] ++ after, zs ++ [z]) -- зомби не двигается
+      Nothing ->
+        (ps, zs ++ [Z.updateZombieStep z dt]) -- зомби двигается
+  ) (plants, []) zombies
 
 main :: IO ()
 main = do
@@ -163,7 +175,7 @@ handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) state =
                 let (gridX, gridY) = snapToGrid (x, y)
                 in if isCellOccupied plants (gridX, gridY)
                    then SelectingPlant plants t plantType sun suns sunTimers mowers zombies bullets  -- Cell occupied, stay in SelectingPlant
-                   else let newPlant = Plant plantType (gridX, gridY) 100
+                   else let newPlant = Plant plantType (gridX, gridY) 100.0
                             card = head $ filter (\c -> cardType c == plantType) availableCards
                             newSun = sun - cost card
                             newSunTimers = if plantType == Sunflower
@@ -179,38 +191,33 @@ handleEvent _ state = state
 updateGame :: Float -> GameState -> GameState
 updateGame dt (Playing plants t sun suns sunTimers mowers zombies bullets) =
   let newTime = t + dt
-      -- Update zombies before collision
-      updatedZombies = Z.updateAllZ zombies newTime
+      -- Зомби кусают растения
+      (plantsAfterBite, zombiesAfterBite) = bitePlantsByZombies plants zombies dt newTime
+      alivePlants = filter (\(Plant _ _ h) -> h > 0.0) plantsAfterBite
       -- Process collisions, killing all colliding zombies in the same lane
-      (activatedMowers, collidedZombies) = processCollisions mowers updatedZombies
+      (activatedMowers, collidedZombies) = processCollisions mowers zombiesAfterBite
       -- Remove dead zombies
       prefinalZombies = Z.clearDead collidedZombies
-
       pfinalZombies = B.hitAllZAllB prefinalZombies (B.updateAllB bullets dt)
-      nbullets = B.exhaustBullets (B.conjureAll plants newTime (B.updateAllB bullets dt)) zombies
+      nbullets = B.exhaustBullets (B.conjureAll alivePlants newTime (B.updateAllB bullets dt)) zombiesAfterBite
       finalZombies = Z.clearDead pfinalZombies
-
       movedMowers = updateMowers dt activatedMowers
-
       -- Генерация солнц
-      sunflowerPlants = [p | p@(Plant Sunflower (x, y) _) <- plants]
+      sunflowerPlants = [p | p@(Plant Sunflower (x, y) _) <- alivePlants]
       plantsWithTimers = [(p, lastSunTime p) | p <- sunflowerPlants]
       generatedSuns = generateSun plantsWithTimers newTime suns
       allSuns = updateSuns dt (suns ++ generatedSuns)
-
       lastSunTime (Plant Sunflower (x,y) _) =
         case lookup (x, y) sunTimers of
           Just tm -> tm
-          Nothing -> -1000  -- Allow immediate sun spawn for new sunflowers
-
+          Nothing -> -1000
       updatedTimers = foldl' updateTimer sunTimers
         [ (x,y) | (Plant Sunflower (x,y) _, lastT) <- plantsWithTimers
                 , newTime - lastT >= 10 ]
-
       updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
   in if Z.checkFinish finalZombies criticalX
      then GameOver
-     else Playing plants newTime sun allSuns updatedTimers movedMowers finalZombies nbullets
+     else Playing alivePlants newTime sun allSuns updatedTimers movedMowers finalZombies nbullets
   where
     processCollisions ms zs =
       let -- Find lanes where any zombie collides with a lawnmower
@@ -228,7 +235,7 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies bullets) =
 updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombies bullets) =
   let newTime = t + dt
       -- Update zombies before collision
-      updatedZombies = Z.updateAllZ zombies newTime
+      updatedZombies = map (\z -> Z.updateZombieStep z dt) zombies
       -- Process collisions, killing all colliding zombies in the same lane
       (newMowers, collidedZombies) = processCollisions mowers updatedZombies
       prefinalZombies = Z.clearDead collidedZombies
