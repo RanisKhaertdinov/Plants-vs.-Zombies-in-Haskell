@@ -6,11 +6,17 @@ module Zombie
     , hitZombie
     , clearDead
     , prettyZombie
+    , onlawn
     ) where
 
 import Graphics.Gloss
 import GameTypes
 import Data.Maybe (mapMaybe)
+
+
+
+slow :: Float
+slow = 8
 
 animateZombie :: Zombie -> Picture
 animateZombie (Zombie pos _ _) =
@@ -40,6 +46,8 @@ hitZombie (Zombie pos hp col) damage
     | hp-damage > 0 = Zombie pos (hp-damage) col
     | otherwise = Zombie pos 0 (Coloring 0 0 0 0.8)
 
+onlawn :: Zombie -> Bool
+onlawn (Zombie (Position _ _ _ (x, _) _) _ _) = x<500
 
 clearDead :: [Zombie] -> [Zombie]
 clearDead [] = []

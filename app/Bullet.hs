@@ -79,7 +79,7 @@ posToLane y = roundFloat ((y/66.6)+2)
 
 conjureBullet :: Plant -> Float -> [Bullet] -> [Bullet]
 conjureBullet (Plant Peashooter (x, y) _) time bullets
-    | bRem time < 0.1/3-0.01     = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 3 (Coloring 0 1 0 1) : bullets
+    | (bRem time < 0.1/3-0.01)     = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 2 (Coloring 0 1 0 1) : bullets
     | otherwise             = bullets
 conjureBullet _ _ b = b
 

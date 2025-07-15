@@ -13,7 +13,7 @@ initialLawnMowers :: [LawnMower]
 initialLawnMowers = [ LawnMower (-350) (fromIntegral i) False | i <- [0..4] ]
 
 updateMowers :: Float -> [LawnMower] -> [LawnMower]
-updateMowers dt mowers = map (updateMower dt) mowers
+updateMowers dt mowers = exhaustMower (map (updateMower dt) mowers)
   where
     updateMower dt m@(LawnMower pos lane active)
       | active    = LawnMower (pos + 800 * dt) lane active
@@ -45,3 +45,10 @@ renderLawnMower gameTime m =
                         ]
               else Blank
   in Translate x y $ Pictures [body, wheel1, wheel2, handle, blade]
+
+
+exhaustMower :: [LawnMower] -> [LawnMower]
+exhaustMower [] = []
+exhaustMower (x@(LawnMower pos _ _):xs) 
+  | pos > 500 = exhaustMower xs
+  | otherwise = x : exhaustMower xs
