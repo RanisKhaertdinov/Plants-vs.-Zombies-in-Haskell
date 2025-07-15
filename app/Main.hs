@@ -91,31 +91,37 @@ renderGameState gs = Pictures $ allPictures
       Playing _ t _ _ _ _ _ _ -> t
       SelectingPlant _ t _ _ _ _ _ _ _ -> t
       GameOver -> 0
+      Win -> 0
 
     plants = case gs of
       Playing ps _ _ _ _ _ _ _ -> ps
       SelectingPlant ps _ _ _ _ _ _ _ _ -> ps
       GameOver -> []
+      Win -> []
 
     suns = case gs of
       Playing _ _ _ suns _ _ _ _ -> suns
       SelectingPlant _ _ _ _ suns _ _ _ _ -> suns
       GameOver -> []
+      Win -> []
 
     currentSun = case gs of
       Playing _ _ sun _ _ _ _ _ -> sun
       SelectingPlant _ _ _ sun _ _ _ _ _ -> sun
       GameOver -> 0
+      Win -> 0
 
     zombies = case gs of
       Playing _ _ _ _ _ _ zs _ -> zs
       SelectingPlant _ _ _ _ _ _ _ zs _ -> zs
       GameOver -> []
+      Win -> []
     
     bullets = case gs of
       Playing _ _ _ _ _ _ _ bs -> bs
       SelectingPlant _ _ _ _ _ _ _ _ bs -> bs
       GameOver -> []
+      Win -> []
 
     picZ = Z.animateAllZ zombies
 
@@ -134,6 +140,7 @@ renderGameState gs = Pictures $ allPictures
       Playing _ _ _ _ _ mowers _ _ -> mowers
       SelectingPlant _ _ _ _ _ _ mowers _ _ -> mowers
       GameOver -> []
+      Win -> []
 
     lawnMowerPics = map (renderLawnMower currentTime) lawnMowers
 
@@ -143,6 +150,11 @@ renderGameState gs = Pictures $ allPictures
         , cards
         , gameOverText
         ] ++ plantPics ++ bulletPics ++ sunPics ++ picZ ++ lawnMowerPics
+      Win ->
+        [ sunDisplay
+        , cards
+        , winText
+        ] ++ plantPics ++ bulletPics ++ sunPics ++ picZ ++ lawnMowerPics
       _ ->
         [ sunDisplay
         , cards
@@ -150,6 +162,8 @@ renderGameState gs = Pictures $ allPictures
 
 gameOverText :: Picture
 gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
+winText :: Picture
+winText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "You win!"
 
 handleEvent :: Event -> GameState -> GameState
 handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) state =
@@ -217,7 +231,9 @@ updateGame dt (Playing plants t sun suns sunTimers mowers zombies bullets) =
       updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
   in if Z.checkFinish finalZombies criticalX
      then GameOver
-     else Playing alivePlants newTime sun allSuns updatedTimers movedMowers finalZombies nbullets
+     else if isEmpty finalZombies
+          then Win
+          else Playing alivePlants newTime sun allSuns updatedTimers movedMowers finalZombies nbullets
   where
     processCollisions ms zs =
       let -- Find lanes where any zombie collides with a lawnmower
@@ -261,7 +277,9 @@ updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombi
       updateTimer acc pos = (pos, newTime) : filter ((/= pos) . fst) acc
   in if Z.checkFinish finalZombies criticalX
      then GameOver
-     else SelectingPlant plants newTime plantType sun allSuns updatedTimers movedMowers finalZombies nbullets
+     else if isEmpty finalZombies
+          then Win
+          else SelectingPlant plants newTime plantType sun allSuns updatedTimers movedMowers finalZombies nbullets
   where
     processCollisions ms zs =
       let -- Find lanes where any zombie collides with a lawnmower
@@ -277,3 +295,8 @@ updateGame dt (SelectingPlant plants t plantType sun suns sunTimers mowers zombi
     isColliding z m = C.checkCollision z m && abs (posLane (zombiePos z) - lawnLane m) < 0.1
 
 updateGame _ GameOver = GameOver
+updateGame _ Win = Win
+
+isEmpty :: [a] -> Bool
+isEmpty [] = True
+isEmpty _ = False
