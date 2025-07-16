@@ -23,27 +23,6 @@ import GHC.IO.Buffer (Buffer)
 laneHeight :: Float
 laneHeight = 66.6  -- Must match Main.hs
 
--- generateBullet :: Plant -> Float -> GameState -> Picture
--- generateBullet (Plant Peashooter (x, y) _) time gameMod =
---     case gameMod of
---         Playing  {} ->
---             let bulSpeed = 200
---                 distance = 600 - x
---                 interval = 1.5
---                 bulletTimes = [time, time - interval, time - 2 * interval]
---                 bulletPics = [ let t = mod' (bulSpeed * t') distance
---                                    bulX = x + t
---                                in if t' >= 0
---                                   then Translate bulX y $ Color green $ circleSolid 10
---                                   else blank
---                              | t' <- bulletTimes
---                            ]
-
---             in Pictures bulletPics
---         GameOver -> blank
---         SelectingPlant  {}-> blank
-generateBullet _ _ _ = blank
-
 
 animateBullet :: Bullet -> Picture
 animateBullet (Bullet pos _ (Coloring r g b a)) =
@@ -63,7 +42,7 @@ updateBullet (Bullet (Position start lane speed (x, y) (hx, hy)) dmg (Coloring r
 
 tooLong :: Bullet -> Bool
 tooLong (Bullet (Position start lane speed (x, y) (hx, hy)) dmg (Coloring r g b a)) 
-    = x > 500
+    = x > 190 -- 500 край карты, 190 край газона
 
 -- Update all bullets by dt, removing those that go too far
 updateAllB :: [Bullet] -> Float -> [Bullet]
@@ -112,9 +91,7 @@ checkCollision z b =
       collides = abs (zx - getX b) < 10 && abs (zy - my) < 50 && laneDiff < 0.1
   in collides
 
--- checkCollision :: Zombie -> Bullet -> Bool
--- checkCollision (Zombie (Position _ lane1 _ (x1, _) (hx1, _)) _ _) (Bullet (Position _ lane2 _ (x2, _) (hx2, _)) _ _)
---     = lane1 == lane2 && x2 - x1 < 0
+
 
 -- Check if a bullet collides with any zombie
 checkAllB :: [Zombie] -> Bullet -> Bool

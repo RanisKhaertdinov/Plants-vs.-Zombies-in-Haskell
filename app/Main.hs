@@ -15,39 +15,39 @@ import Data.Maybe (listToMaybe)
 import GameTypes (Position(..), Zombie(..), Bullet(..), Coloring(..), posLane, zombiePos)
 import qualified Zombie as Z
 import System.Random (mkStdGen, randomRs)
+import qualified GameMods.EasyMod as EasyMod
+import qualified GameMods.MediumMod as MediumMod
+import qualified GameMods.HardMod as HardMod
+import qualified GameMods.BossMod as BossMod
+-- import qualified GameMods.BossMod as BossMod
 
 -- Константы игры
 criticalX :: Float
 criticalX = -350  -- Left edge of the field (house)
 
-sunInterval :: Float
-sunInterval = 3
+-- Select difficult mode
+selectedDifficulty :: GameDifficult
+selectedDifficulty = Hard
 
-debugMode :: Bool
-debugMode = False
+-- Получение параметров сложности
+initialSunsCount :: Int
+sunIntervalMod :: Float
+generateWaveFunc :: Int -> [Zombie]
+( initialSunsCount, sunIntervalMod, generateWaveFunc ) = case selectedDifficulty of
+  Easy   -> (EasyMod.initialSunsCount, EasyMod.sunIntervalMod, EasyMod.generateWave)
+  Medium -> (MediumMod.initialSunsCount, MediumMod.sunIntervalMod, MediumMod.generateWave)
+  Hard   -> (HardMod.initialSunsCount, HardMod.sunIntervalMod, HardMod.generateWave)
+  Boss   -> (500, 0.7, \_ -> []) -- временно, если BossMod не готов
 
-baseZombies :: [Z.Zombie]
-baseZombies =
-  [ Z.Zombie (Position x lane speed (x, gridY !! laneIdx) (30, 30)) hp (Coloring 1 1 1 1)
-  | (x, laneIdx, speed, hp) <-
-      [ (900, 0, 40, 10), (950, 1, 35, 10), (1000, 2, 45, 10), (1050, 3, 38, 10), (1100, 4, 42, 10)
-      , (1200, 0, 40, 10), (1250, 1, 35, 10), (1300, 2, 45, 10), (1350, 3, 38, 10), (1400, 4, 42, 10)
-      , (1600, 0, 45, 15), (1650, 1, 45, 15), (1700, 2, 45, 15), (1750, 3, 45, 15), (1800, 4, 45, 15)
-      ]
-  , let lane = fromIntegral laneIdx
-  ]
-wave2 = [ Z.Zombie (Position x lane speed (x, gridY !! laneIdx) (30, 30)) hp (Coloring 1 1 1 1)
-  | (x, laneIdx, speed, hp) <-
-      [ (900, 0, 40, 10), (950, 1, 35, 10), (1000, 2, 45, 10), (1050, 3, 38, 10), (1100, 4, 42, 10)
-      , (1200, 0, 40, 10), (1250, 1, 35, 10), (1300, 2, 45, 10), (1350, 3, 38, 10), (1400, 4, 42, 10)
-      , (1600, 0, 45, 15), (1650, 1, 45, 15), (1700, 2, 45, 15), (1750, 3, 45, 15), (1800, 4, 45, 15)
-      ]
-  , let lane = fromIntegral laneIdx
-  ]
 
-finalWave = 2
+
+finalWave = case selectedDifficulty of
+  Easy -> EasyMod.waveZombieCount
+  Medium -> MediumMod.waveZombieCount
+  Hard -> HardMod.waveZombieCount
+  Boss -> BossMod.waveZombieCount
 newWave w 
-  | w < finalWave = wave2
+  | w < finalWave = generateWaveFunc w
   | otherwise = []
 
 -- Grid definitions for plant placement
@@ -105,37 +105,37 @@ main :: IO ()
 main = do
     map <- generateMap
     play (InWindow "PvZ" (1000, 800) (50, 50)) black 60
-        (Playing [] 0 Nothing 500 [] [] initialLawnMowers baseZombies [] 1)
+        (Playing [] 0 Nothing initialSunsCount [] [] initialLawnMowers (generateWaveFunc 0) [] 1 selectedDifficulty)
         (\gs -> Pictures [map, renderGameState gs])
         handleEvent
         updateGame
 
 extractCurrentTime :: GameState -> Float
-extractCurrentTime (Playing _ t _ _ _ _ _ _ _ _) = t
+extractCurrentTime (Playing _ t _ _ _ _ _ _ _ _ _) = t
 extractCurrentTime _ = 0
 
 extractPlants :: GameState -> [Plant]
-extractPlants (Playing ps _ _ _ _ _ _ _ _ _) = ps
+extractPlants (Playing ps _ _ _ _ _ _ _ _ _ _) = ps
 extractPlants _ = []
 
 extractSuns :: GameState -> [Sun]
-extractSuns (Playing _ _ _ _ suns _ _ _ _ _) = suns
+extractSuns (Playing _ _ _ _ suns _ _ _ _ _ _) = suns
 extractSuns _ = []
 
 extractCurrentSun :: GameState -> Int
-extractCurrentSun (Playing _ _ _ sun _ _ _ _ _ _) = sun
+extractCurrentSun (Playing _ _ _ sun _ _ _ _ _ _ _) = sun
 extractCurrentSun _ = 0
 
 extractZombies :: GameState -> [Zombie]
-extractZombies (Playing _ _ _ _ _ _ _ zs _ _) = zs
+extractZombies (Playing _ _ _ _ _ _ _ zs _ _ _) = zs
 extractZombies _ = []
 
 extractBullets :: GameState -> [Bullet]
-extractBullets (Playing _ _ _ _ _ _ _ _ bs _) = bs
+extractBullets (Playing _ _ _ _ _ _ _ _ bs _ _) = bs
 extractBullets _ = []
 
 extractLawnMowers :: GameState -> [LawnMower]
-extractLawnMowers (Playing _ _ _ _ _ _ mowers _ _ _) = mowers
+extractLawnMowers (Playing _ _ _ _ _ _ mowers _ _ _ _) = mowers
 extractLawnMowers _ = []
 
 renderGameObjects :: [Plant] -> [Bullet] -> [Sun] -> [Zombie] -> [LawnMower] -> Float -> [Picture]
@@ -184,10 +184,10 @@ winText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "You win!"
 -- Helper for handling plant placement
 -- Handles placing a plant on the grid if the cell is not occupied and the player has selected a plant type.
 handlePlantPlacement :: Float -> Float -> GameState -> GameState
-handlePlantPlacement x y (Playing plants t (Just plantType) sun suns sunTimers mowers zombies bullets wave) =
+handlePlantPlacement x y (Playing plants t (Just plantType) sun suns sunTimers mowers zombies bullets wave difficult) =
     let (gridX, gridY) = snapToGrid (x, y)
     in if isCellOccupied plants (gridX, gridY)
-       then Playing plants t (Just plantType) sun suns sunTimers mowers zombies bullets wave  -- Cell occupied, stay in selection
+       then Playing plants t (Just plantType) sun suns sunTimers mowers zombies bullets wave difficult  -- Cell occupied, stay in selection
        else let newPlant = Plant plantType (gridX, gridY) plantHealth
                 plantHealth = case plantType of
                               Sunflower -> 100.0
@@ -198,42 +198,42 @@ handlePlantPlacement x y (Playing plants t (Just plantType) sun suns sunTimers m
                 newSunTimers = if plantType == Sunflower
                                then ((gridX, gridY), t) : sunTimers
                                else sunTimers
-            in Playing (newPlant : plants) t Nothing newSun (suns ++ generateSun [(newPlant, t)] t suns) newSunTimers mowers zombies bullets wave
+            in Playing (newPlant : plants) t Nothing newSun (suns ++ generateSun [(newPlant, t)] t suns) newSunTimers mowers zombies bullets wave difficult
 handlePlantPlacement _ _ state = state
 
 -- Helper for handling sun collection
 -- Handles collecting suns when the player clicks on them.
 handleSunCollection :: Float -> Float -> GameState -> GameState
-handleSunCollection x y (Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave) =
+handleSunCollection x y (Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave difficult) =
     let clickedSuns = filter (\s -> isSunClicked s (x, y)) suns
         remainingSuns = filter (\s -> not (isSunClicked s (x, y))) suns
         collectedValue = sum (map value clickedSuns)
-    in Playing plants t mPlantType (sun + collectedValue) remainingSuns sunTimers mowers zombies bullets wave
+    in Playing plants t mPlantType (sun + collectedValue) remainingSuns sunTimers mowers zombies bullets wave difficult
 handleSunCollection _ _ state = state
 
 -- Helper for handling card selection
 -- Handles selecting a plant card if the player has enough sun.
 handleCardSelection :: Float -> Float -> GameState -> GameState
-handleCardSelection x y (Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave) =
+handleCardSelection x y (Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave difficult) =
     let idx = floor ((x + 350) / 120)
     in if idx >= 0 && idx < length availableCards
        then let card = availableCards !! idx
             in if sun >= cost card
-               then Playing plants t (Just (cardType card)) sun suns sunTimers mowers zombies bullets wave
-               else Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave
-       else Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave
+               then Playing plants t (Just (cardType card)) sun suns sunTimers mowers zombies bullets wave difficult
+               else Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave difficult
+       else Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave difficult
 handleCardSelection _ _ state = state
 
 handleEvent :: Event -> GameState -> GameState
 handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) state =
     case state of
-        Playing _ _ (Just _) _ _ _ _ _ _ _
+        Playing _ _ (Just _) _ _ _ _ _ _ _ _
             | y < 200 -> handlePlantPlacement x y state
             | y >= 200 -> case state of
-                Playing plants t (Just plantType) sun suns sunTimers mowers zombies bullets wave ->
-                    Playing plants t Nothing sun suns sunTimers mowers zombies bullets wave
+                Playing plants t (Just plantType) sun suns sunTimers mowers zombies bullets wave difficult ->
+                    Playing plants t Nothing sun suns sunTimers mowers zombies bullets wave difficult
                 _ -> state
-        Playing _ _ _ _ _ _ _ _ _ _
+        Playing _ _ _ _ _ _ _ _ _ _ _
             | y < 200 -> handleSunCollection x y state
             | y > 200 && y < 350 -> handleCardSelection x y state
             | otherwise -> state
@@ -296,7 +296,7 @@ processWaveManagement zombies wave =
 -- Main game update function
 -- Advances the game state by one frame: updates zombies, bullets, mowers, suns, and handles win/lose conditions.
 updateGame :: Float -> GameState -> GameState
-updateGame dt (Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave) =
+updateGame dt (Playing plants t mPlantType sun suns sunTimers mowers zombies bullets wave difficult) =
   let newTime = t + dt
       -- Zombies bite plants and move
       (plantsAfterBite, zombiesAfterBite) = processZombieActions plants zombies dt newTime
@@ -319,7 +319,7 @@ updateGame dt (Playing plants t mPlantType sun suns sunTimers mowers zombies bul
      then GameOver
      else if isEmpty finalZombies
           then Win
-          else Playing alivePlants newTime mPlantType sun allSuns (map (\(x,y,tm) -> ((x,y),tm)) updatedTimers) movedMowers finalZombies nbullets nwave
+          else Playing alivePlants newTime mPlantType sun allSuns (map (\(x,y,tm) -> ((x,y),tm)) updatedTimers) movedMowers finalZombies nbullets nwave difficult
 updateGame dt (GameOver) = GameOver
 updateGame dt (Win) = Win
 

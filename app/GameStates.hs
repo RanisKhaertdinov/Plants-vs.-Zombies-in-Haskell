@@ -3,6 +3,7 @@ module GameStates where
 import Plant
 import LawnMower
 import GameTypes (Zombie, Bullet)
+import GHC.IO.Exception (IOErrorType(HardwareFault))
 
 -- | Represents a falling or collectible sun.
 data Sun = Sun
@@ -13,9 +14,18 @@ data Sun = Sun
     , fallProgress :: Float       -- ^ 0 (just started) to 1 (landed)
     } deriving (Show)
 
+
+data GameDifficult
+  = Easy
+  | Medium
+  | Hard
+  | Boss
+  deriving (Show)
+
+
 -- | The main game state, including all entities and the current wave.
 data GameState
-    = Playing [Plant] Float (Maybe PlantType) Int [Sun] [((Float,Float), Float)] [LawnMower] [Zombie] [Bullet] Int
+    = Playing [Plant] Float (Maybe PlantType) Int [Sun] [((Float,Float), Float)] [LawnMower] [Zombie] [Bullet] Int GameDifficult
       -- ^ Playing: plants, time, selected plant, sun, suns, sunTimers, mowers, zombies, bullets, wave
     | GameOver  -- ^ The player has lost
     | Win       -- ^ The player has won
