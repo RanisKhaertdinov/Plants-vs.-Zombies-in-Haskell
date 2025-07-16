@@ -17,7 +17,7 @@ import Data.Fixed (mod')
 import GHC.IO.Buffer (Buffer)
 
 
--- generateBullet :: Plant -> Float -> GameState-> Picture
+-- generateBullet :: Plant -> Float -> GameState -> Picture
 -- generateBullet (Plant Peashooter (x, y) _) time gameMod =
 --     case gameMod of
 --         Playing  {} ->
@@ -36,7 +36,7 @@ import GHC.IO.Buffer (Buffer)
 --             in Pictures bulletPics
 --         GameOver -> blank
 --         SelectingPlant  {}-> blank
--- generateBullet _ _ _ = blank
+generateBullet _ _ _ = blank
 
 
 animateBullet :: Bullet -> Picture

@@ -13,8 +13,8 @@ data Sun = Sun
     } deriving (Show)
 
 data GameState
-    = Playing [Plant] Float Int [Sun] [((Float,Float), Float)] [LawnMower] [Zombie] [Bullet] Int
+    = Playing [Plant] Float (Maybe PlantType) Int [Sun] [((Float,Float), Float)] [LawnMower] [Zombie] [Bullet] Int
     | GameOver
     | Win
-    | SelectingPlant [Plant] Float PlantType Int [Sun] [((Float,Float), Float)] [LawnMower] [Zombie] [Bullet] Int
+    
     deriving (Show)

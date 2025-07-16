@@ -36,6 +36,8 @@ license-file:       LICENSE
 
 -- The package author(s).
 author:             Ranis Haertdinov
+                    Oleg Stepanov
+                    Mikhail Akhatov
 
 -- An email address to which users can send suggestions, bug reports, and patches.
 maintainer:         khaertdinovranis@gmail.com

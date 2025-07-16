@@ -47,5 +47,17 @@
 
 ---
 
+## Authors
+- Ranis Haertdinov
+- Oleg Stepanov
+- Mikhail Akhatov
+
+## Assets & Art Credits
+- Frontyard background: PopCap Games (original PvZ)
+- Plant, zombie, and sun sprites: Hand-drawn
+- UI elements: Oleg Stepanov, Mikhail Akhatov
+
+---
+
 **Have fun!**
 
