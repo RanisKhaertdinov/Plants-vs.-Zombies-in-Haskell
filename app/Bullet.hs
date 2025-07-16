@@ -16,6 +16,12 @@ import GameTypes
 import Data.Fixed (mod')
 import GHC.IO.Buffer (Buffer)
 
+-- Bullet logic for Plants vs. Zombies in Haskell
+-- Handles bullet creation, animation, movement, collision, and interaction with zombies
+
+-- Use the same laneHeight as in Main.hs for lane calculations
+laneHeight :: Float
+laneHeight = 66.6  -- Must match Main.hs
 
 -- generateBullet :: Plant -> Float -> GameState -> Picture
 -- generateBullet (Plant Peashooter (x, y) _) time gameMod =
@@ -44,6 +50,7 @@ animateBullet (Bullet pos _ (Coloring r g b a)) =
     let (x, y) = posCoord pos
     in Translate x y (Color (makeColor r g b a) $ circleSolid 5)
 
+-- Animate all bullets as Gloss pictures
 animateAllB :: [Bullet] -> [Picture]
 animateAllB bullets =
   [ animateBullet b
@@ -58,6 +65,7 @@ tooLong :: Bullet -> Bool
 tooLong (Bullet (Position start lane speed (x, y) (hx, hy)) dmg (Coloring r g b a)) 
     = x > 500
 
+-- Update all bullets by dt, removing those that go too far
 updateAllB :: [Bullet] -> Float -> [Bullet]
 updateAllB [] _ = []
 updateAllB (x:xs) time 
@@ -77,12 +85,14 @@ bRem x
 posToLane :: Float -> Float
 posToLane y = roundFloat ((y/66.6)+2)
 
+-- Create a bullet from a Peashooter if the time is right
 conjureBullet :: Plant -> Float -> [Bullet] -> [Bullet]
 conjureBullet (Plant Peashooter (x, y) _) time bullets
     | (bRem time < 0.1/3-0.01)     = Bullet (Position x (posToLane y) 200 (x, y) (5, 5)) 1 (Coloring 0 1 0 1) : bullets
     | otherwise             = bullets
 conjureBullet _ _ b = b
 
+-- Create bullets for all plants (mainly Peashooters)
 conjureAll :: [Plant] -> Float -> [Bullet] -> [Bullet]
 conjureAll [] _ bullets = bullets
 conjureAll (x:xs) t bullets = conjureAll xs t (conjureBullet x t bullets)
@@ -93,10 +103,11 @@ getLane (Bullet (Position _ l _ _ _) _ _) = l
 getX :: Bullet -> Float
 getX (Bullet (Position _ _ _ (x,_) _) _ _) = x
 
+-- Check if a bullet collides with any zombie
 checkCollision :: Zombie -> Bullet -> Bool
 checkCollision z b =
   let (zx, zy) = posCoord (zombiePos z)
-      my = getLane b * 66.6 - 2 * 66.6
+      my = getLane b * laneHeight - 2 * laneHeight
       laneDiff = abs (posLane (zombiePos z) - getLane b)
       collides = abs (zx - getX b) < 10 && abs (zy - my) < 50 && laneDiff < 0.1
   in collides
@@ -105,6 +116,7 @@ checkCollision z b =
 -- checkCollision (Zombie (Position _ lane1 _ (x1, _) (hx1, _)) _ _) (Bullet (Position _ lane2 _ (x2, _) (hx2, _)) _ _)
 --     = lane1 == lane2 && x2 - x1 < 0
 
+-- Check if a bullet collides with any zombie
 checkAllB :: [Zombie] -> Bullet -> Bool
 checkAllB [] _ = False
 checkAllB (z:zs) b = checkCollision z b || checkAllB zs b
@@ -116,18 +128,21 @@ hitZombie (Zombie pos hp col) damage
     | hp-damage > 0 = Zombie pos (hp-damage) col
     | otherwise = Zombie pos 0 (Coloring 0 0 0 0.8)
 
+-- Apply bullet damage to all zombies for one bullet
 hitAllZOneB :: [Zombie] -> Bullet -> [Zombie]
 hitAllZOneB [] _ = []
 hitAllZOneB (x:xs) y@(Bullet pos dmg col)
     | checkCollision x y   = hitZombie x dmg : hitAllZOneB xs y
     | otherwise              = x : hitAllZOneB xs y
 
+-- Apply all bullets to all zombies
 hitAllZAllB :: [Zombie] -> [Bullet] -> [Zombie]
 hitAllZAllB z [] = z
 hitAllZAllB z (b:bs) = hitAllZAllB (hitAllZOneB z b) bs
 
 
 
+-- Remove bullets that have hit a zombie
 exhaustBullets :: [Bullet] -> [Zombie] -> [Bullet]
 exhaustBullets [] _ = []
 exhaustBullets (b:bs) zs

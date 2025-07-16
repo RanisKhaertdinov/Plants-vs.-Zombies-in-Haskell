@@ -3,15 +3,18 @@ module LawnMower where
 import Graphics.Gloss
 import GameTypes (Position(..))
 
+-- | Represents a lawnmower on the field.
 data LawnMower = LawnMower
-  { lawnPos :: Float
-  , lawnLane :: Float
-  , isActive :: Bool
+  { lawnPos :: Float      -- ^ Current x-position
+  , lawnLane :: Float     -- ^ Lane index (row)
+  , isActive :: Bool      -- ^ Is the mower currently moving?
   } deriving (Show)
 
+-- | Initial lawnmower positions for all lanes.
 initialLawnMowers :: [LawnMower]
 initialLawnMowers = [ LawnMower (-350) (fromIntegral i) False | i <- [0..4] ]
 
+-- | Update all mowers, moving active ones and removing those that have left the field.
 updateMowers :: Float -> [LawnMower] -> [LawnMower]
 updateMowers dt mowers = exhaustMower (map (updateMower dt) mowers)
   where
@@ -19,9 +22,11 @@ updateMowers dt mowers = exhaustMower (map (updateMower dt) mowers)
       | active    = LawnMower (pos + 800 * dt) lane active
       | otherwise = m
 
+-- | Activate the mower in the given lane (by index).
 activateMower :: Int -> [LawnMower] -> [LawnMower]
 activateMower n mowers = take n mowers ++ [m { isActive = True } | m <- [mowers !! n]] ++ drop (n + 1) mowers
 
+-- | Render a lawnmower as a Gloss picture, with animation if active.
 renderLawnMower :: Float -> LawnMower -> Picture
 renderLawnMower gameTime m =
   let x = lawnPos m
@@ -46,7 +51,7 @@ renderLawnMower gameTime m =
               else Blank
   in Translate x y $ Pictures [body, wheel1, wheel2, handle, blade]
 
-
+-- | Remove mowers that have left the field (x > 500).
 exhaustMower :: [LawnMower] -> [LawnMower]
 exhaustMower [] = []
 exhaustMower (x@(LawnMower pos _ _):xs) 
