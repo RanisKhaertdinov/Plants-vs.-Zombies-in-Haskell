@@ -88,6 +88,7 @@ executable PvZ
                     , GameMods.MediumMod
                     , GameMods.HardMod
                     , GameMods.BossMod
+                    , RandomSuns
                     
                     
     -- Directories containing source files.

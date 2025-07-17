@@ -4,6 +4,7 @@ import Plant
 import LawnMower
 import GameTypes (Zombie, Bullet)
 import GHC.IO.Exception (IOErrorType(HardwareFault))
+import System.Random (StdGen)
 
 -- | Represents a falling or collectible sun.
 data Sun = Sun
@@ -22,11 +23,15 @@ data GameDifficult
   | Boss
   deriving (Show)
 
-
+type Time = Float
+type SunCount = Int
+type WaveNumber = Int
+type RandomSunTimer = Float
+type SunTimers = ((Float, Float), Float )
 -- | The main game state, including all entities and the current wave.
 data GameState
-    = Playing [Plant] Float (Maybe PlantType) Int [Sun] [((Float,Float), Float)] [LawnMower] [Zombie] [Bullet] Int GameDifficult
-      -- ^ Playing: plants, time, selected plant, sun, suns, sunTimers, mowers, zombies, bullets, wave
+    = Playing [Plant] Time (Maybe PlantType) SunCount [Sun] [SunTimers] [LawnMower] [Zombie] [Bullet] WaveNumber GameDifficult StdGen RandomSunTimer
+      -- ^ Playing: plants, time, selected plant, sun, suns, sunTimers, mowers, zombies, bullets, wave, random generator, random sun timer
     | GameOver  -- ^ The player has lost
     | Win       -- ^ The player has won
     deriving (Show)
