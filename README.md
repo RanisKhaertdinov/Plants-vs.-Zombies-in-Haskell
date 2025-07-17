@@ -44,6 +44,13 @@
 - Zombies stop and bite plants.
 - Sun appears near sunflowers, falls down, and can be collected by clicking.
 - Lawnmowers destroy zombies if they reach the start of the lane.
+  
+---
+
+## Extra features
+- Oleg: implemented the main menu.
+-	Ranis: added multiple difficulty levels and randomly falling suns, making the game more dynamic and challenging.
+-	Mikhail: created a boss level, introducing a unique challenge and adding variety to the gameplay.
 
 ---
 
