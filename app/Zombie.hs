@@ -1,5 +1,6 @@
 module Zombie
     ( Zombie(..)
+    , animateZombie
     , animateAllZ
     , updateZombieStep
     , checkFinish
@@ -14,46 +15,50 @@ import GameTypes
 import Data.Maybe (mapMaybe)
 
 -- | Animate a single zombie as a Gloss picture.
+-- Zombie.hs
 animateZombie :: Zombie -> Picture
-animateZombie (Zombie pos _ _) =
+animateZombie z@(Zombie pos _ _ isBoss) =
     let (x, y) = posCoord pos
-    in Translate x y prettyZombie
-
+        basePic = if isBoss
+                  then Scale 3 3 $ Translate 0 30 prettyZombie
+                  else prettyZombie
+    in Translate x y basePic
 -- | Animate all zombies as Gloss pictures (only those with health > 0).
 animateAllZ :: [Zombie] -> [Picture]
 animateAllZ zombies =
   [ animateZombie z
-  | z@(Zombie pos health _) <- zombies
+  | z@(Zombie pos health _ _) <- zombies
   , health > 0
   ]
 
 -- | Move a zombie forward by its speed, if alive.
 updateZombieStep :: Zombie -> Float -> Zombie
-updateZombieStep (Zombie (Position start lane speed (x, y) (hx, hy)) hp col) dt =
-    let newX = x - speed * dt
-    in Zombie (Position start lane speed (newX, y) (hx, hy)) hp col
+updateZombieStep (Zombie pos hp col isBoss) dt =
+    let (Position start lane speed (x, y) (hx, hy)) = pos
+        newX = x - speed * dt
+        newPos = Position start lane speed (newX, y) (hx, hy)
+    in Zombie newPos hp col isBoss
 
 -- | Returns True if any zombie has reached the left edge (game over).
 checkFinish :: [Zombie] -> Float -> Bool
 checkFinish zombies edge = any isAtEdge zombies
     where
-        isAtEdge (Zombie (Position _ _ _ (x, _) _) health _) = health > 0 && x <= edge
+        isAtEdge (Zombie (Position _ _ _ (x, _) _) health _ _) = health > 0 && x <= edge
 
 -- | Apply damage to a zombie. If health drops to zero, mark as dead (faded color).
 hitZombie :: Zombie -> Int -> Zombie
-hitZombie (Zombie pos hp col) damage
-    | hp-damage > 0 = Zombie pos (hp-damage) col
-    | otherwise = Zombie pos 0 (Coloring 0 0 0 0.8)
+hitZombie (Zombie pos hp col isBoss) damage =
+    Zombie pos (max 0 (hp - damage)) col isBoss  -- Гарантированно сохраняем isBoss
 
 -- | Returns True if the zombie is still on the lawn (x < 500).
 onlawn :: Zombie -> Bool
-onlawn (Zombie (Position _ _ _ (x, _) _) _ _) = x<500
+onlawn (Zombie (Position _ _ _ (x, _) _) _ _ _) = x < 500
 
 -- | Remove all dead zombies from the list.
 clearDead :: [Zombie] -> [Zombie]
 clearDead [] = []
-clearDead ((Zombie pos hp col):xs)
-    | hp > 0   = (Zombie pos hp col) : clearDead xs
+clearDead ((Zombie pos hp col isBoss):xs)
+    | hp > 0   = Zombie pos hp col isBoss : clearDead xs
     | otherwise = clearDead xs
 
 -- | Render a zombie as a Gloss picture.

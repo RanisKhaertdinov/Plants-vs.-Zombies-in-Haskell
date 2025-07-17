@@ -21,7 +21,7 @@ waveZombieCount = 3
 -- Generate zombies for the next wave (Medium difficulty)
 generateWave :: Int -> [Zombie]
 generateWave waveNum =
-  [ Zombie (Position x lane (speed * zombieSpeedMod) (x, gridY !! laneIdx) (30, 30)) (round (hp * zombieHealthMod)) (Coloring 1 1 1 1)
+  [ Zombie (Position x lane (speed * zombieSpeedMod) (x, gridY !! laneIdx) (30, 30)) (round (hp * zombieHealthMod)) (Coloring 1 1 1 1) False
   | (x, laneIdx, speed, hp) <-
       case waveNum of
         0 -> [(900, 0, 35, 10), (950, 1, 33, 10), (1000, 2, 37, 10), (1050, 3, 34, 10)] -- Initial wave

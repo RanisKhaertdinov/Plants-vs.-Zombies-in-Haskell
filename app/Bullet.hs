@@ -88,7 +88,7 @@ checkCollision z b =
   let (zx, zy) = posCoord (zombiePos z)
       my = getLane b * laneHeight - 2 * laneHeight
       laneDiff = abs (posLane (zombiePos z) - getLane b)
-      collides = abs (zx - getX b) < 10 && abs (zy - my) < 50 && laneDiff < 0.1
+      collides = abs (zx - getX b) < 10 && abs (zy - my) < 50 && (zombieHealth z >= 2000 || laneDiff < 0.1)
   in collides
 
 
@@ -101,16 +101,18 @@ checkAllB (z:zs) b = checkCollision z b || checkAllB zs b
 
 
 hitZombie :: Zombie -> Int -> Zombie
-hitZombie (Zombie pos hp col) damage
-    | hp-damage > 0 = Zombie pos (hp-damage) col
-    | otherwise = Zombie pos 0 (Coloring 0 0 0 0.8)
+hitZombie (Zombie pos hp col isBoss) damage
+    | hp-damage > 0 = Zombie pos (hp-damage) col isBoss  -- Сохраняем статус босса
+    | otherwise = Zombie pos 0 (Coloring 0 0 0 0.8) isBoss  -- Сохраняем статус даже после смерти
 
 -- Apply bullet damage to all zombies for one bullet
 hitAllZOneB :: [Zombie] -> Bullet -> [Zombie]
 hitAllZOneB [] _ = []
-hitAllZOneB (x:xs) y@(Bullet pos dmg col)
-    | checkCollision x y   = hitZombie x dmg : hitAllZOneB xs y
-    | otherwise              = x : hitAllZOneB xs y
+hitAllZOneB (z@(Zombie pos hp col isBoss):zs) bullet
+    | checkCollision z bullet =
+        let damagedZombie = Zombie pos (max 0 (hp - bulletDamage bullet)) col isBoss
+        in damagedZombie : hitAllZOneB zs bullet
+    | otherwise = z : hitAllZOneB zs bullet
 
 -- Apply all bullets to all zombies
 hitAllZAllB :: [Zombie] -> [Bullet] -> [Zombie]

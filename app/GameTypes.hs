@@ -51,7 +51,8 @@ data LawnMower = LawnMower
 data Zombie = Zombie
     { zombiePos :: Position     -- ^ Position and hitbox
     , zombieHealth :: Health    -- ^ Current health
-    , zombieColoring :: Coloring-- ^ Color for rendering
+    , zombieColoring :: Coloring -- ^ Color for rendering
+    , isBoss :: Bool  -- ^ Is this a boss zombie?
     } deriving (Eq, Show)
 
 -- | Bullet state, damage, and color.

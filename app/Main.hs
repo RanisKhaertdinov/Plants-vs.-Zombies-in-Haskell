@@ -20,7 +20,8 @@ import qualified GameMods.EasyMod as EasyMod
 import qualified GameMods.MediumMod as MediumMod
 import qualified GameMods.HardMod as HardMod
 import qualified GameMods.BossMod as BossMod
--- import qualified GameMods.BossMod as BossMod
+import qualified Zombie as Z (animateZombie, animateAllZ, updateZombieStep,
+                            checkFinish, hitZombie, clearDead, onlawn)
 
 -- Constants
 criticalX :: Float
@@ -28,7 +29,7 @@ criticalX = -350  -- Left edge of the field (house)
 
 -- Select game difficulty
 selectedDifficulty :: GameDifficult
-selectedDifficulty = Hard
+selectedDifficulty = Boss
 
 -- Get difficulty parameters
 initialSunsCount :: Int
@@ -38,14 +39,14 @@ generateWaveFunc :: Int -> [Zombie]
   Easy   -> (EasyMod.initialSunsCount, EasyMod.sunIntervalMod, EasyMod.generateWave)
   Medium -> (MediumMod.initialSunsCount, MediumMod.sunIntervalMod, MediumMod.generateWave)
   Hard   -> (HardMod.initialSunsCount, HardMod.sunIntervalMod, HardMod.generateWave)
-  Boss   -> (500, 0.7, \_ -> []) -- Temporary, if BossMod is not ready
+  Boss -> (BossMod.initialSunsCount, BossMod.sunIntervalMod, BossMod.generateWave)
 
 finalWave = case selectedDifficulty of
   Easy -> EasyMod.waveZombieCount
   Medium -> MediumMod.waveZombieCount
   Hard -> HardMod.waveZombieCount
   Boss -> BossMod.waveZombieCount
-newWave w 
+newWave w
   | w < finalWave = generateWaveFunc w
   | otherwise = []
 
@@ -82,7 +83,7 @@ isCellOccupied plants (x, y) =
 
 -- Find the index of a plant to be bitten by a zombie
 findPlantToBite :: Z.Zombie -> [Plant] -> Maybe Int
-findPlantToBite (Z.Zombie (Position _ lane _ (zx, _) (w, _)) _ _) plants =
+findPlantToBite (Z.Zombie (Position _ lane _ (zx, _) (w, _)) _ _ _) plants =
   let laneIdx = round lane
       isTouching (Plant _ (px, py) health) =
         health > 0.0 && abs (py - gridY !! laneIdx) < 1 && (zx - px) < (w/2 + 20) && (zx - px) > 0
@@ -150,7 +151,17 @@ renderGameObjects plants bullets suns zombies lawnmowers currentTime =
   let plantPics = map generatePlant plants
       bulletPics = B.animateAllB bullets
       sunPics = map renderSun suns
-      zombiePics = Z.animateAllZ zombies
+      zombiePics = concatMap (\z@(Zombie pos health _ isBoss) ->
+        let (x, y) = posCoord pos
+            zombiePic = Z.animateZombie z  -- Используем квалифицированный вызов
+            healthBar = if isBoss
+                        then [ Translate x (y + 200) $ Pictures
+                               [ Color black $ rectangleSolid 210 15
+                               , Color green $ rectangleSolid (fromIntegral health / 0.49) 10
+                               ]
+                             ]
+                        else []
+        in zombiePic : healthBar) zombies
       lawnmowerPics = map (renderLawnMower currentTime) lawnmowers
   in plantPics ++ bulletPics ++ sunPics ++ zombiePics ++ lawnmowerPics
 
@@ -177,12 +188,12 @@ renderGameState gs = Pictures $ allPictures
       [ Color yellow $ circleSolid 20
       , Color yellow $ Translate 30 (-7) $ Scale 0.3 0.3 $ Text (show currentSun)
       ]
-    
+
     overlay = renderGameOverlay gs
     objects = renderGameObjects plants bullets suns zombies lawnMowers currentTime
     allPictures = [sunDisplay, cards] ++ overlay ++ objects
 
-    
+
 gameOverText :: Picture
 gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
 winText :: Picture
