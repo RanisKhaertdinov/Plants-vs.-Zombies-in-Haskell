@@ -157,7 +157,7 @@ renderGameObjects plants bullets suns zombies lawnmowers currentTime =
             healthBar = if isBoss
                         then [ Translate x (y + 200) $ Pictures
                                [ Color black $ rectangleSolid 210 15
-                               , Color green $ rectangleSolid (fromIntegral health / 0.49) 10
+                               , Color green $ rectangleSolid (fromIntegral health / 0.735) 10
                                ]
                              ]
                         else []
