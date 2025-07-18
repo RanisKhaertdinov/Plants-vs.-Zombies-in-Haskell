@@ -217,9 +217,9 @@ renderGameState gs = Pictures $ allPictures
 
 
 gameOverText :: Picture
-gameOverText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "Game Over!"
+gameOverText = Color red $ Translate (-300) 0 $ Scale 0.5 0.5 $ Text "Game Over!"
 winText :: Picture
-winText = Color red $ Translate 0 0 $ Scale 0.5 0.5 $ Text "You win!"
+winText = Color red $ Translate (-200) 0 $ Scale 0.5 0.5 $ Text "You win!"
 
 -- Helper for handling plant placement
 -- Handles placing a plant on the grid if the cell is not occupied and the player has selected a plant type.
@@ -372,7 +372,7 @@ updateGame dt (GameOver) = GameOver
 updateGame dt (Win) = Win
 updateGame dt (Menu select gen) 
   | select == 0 = Menu select gen
-  | select > 0 = Playing [] 0 Nothing (initialSunsCount diff) [] [] initialLawnMowers (generateWaveFunc diff 0) [] 1 diff gen 0
+  | select > 0 = Playing [] 0 Nothing (initialSunsCount diff) [] [] bossMow (generateWaveFunc diff 0) [] 1 diff gen 0
     where
       diff = intToDif select
       intToDif x 
@@ -380,6 +380,9 @@ updateGame dt (Menu select gen)
         | x == 2 = Medium
         | x == 3 = Hard
         | x == 4 = Boss
+      bossMow 
+        | select == 4 = []
+        | otherwise = initialLawnMowers
 
 isEmpty :: [a] -> Bool
 isEmpty [] = True
