@@ -27,15 +27,22 @@ availableCards =
 
 -- | Render a sunflower as a Gloss picture.
 prettySunflower :: Picture
-prettySunflower = Pictures
+prettySunflower = Translate 0 (10) $ Pictures
   [ -- Petals
-    Pictures [ Translate (petalX i) (petalY i) $ Color (makeColorI 255 215 0 255) $ circleSolid 15 | i <- [0..11] ]
+    Pictures [ Translate (petalX i) (petalY i) $ Color (makeColorI 255 215 0 255) $ circleSolid 10 | i <- [0..11] ]
   , -- Center
     Color (makeColorI 139 69 19 255) $ circleSolid 13
   , -- Highlighted center
     Color (makeColorI 255 220 120 120) $ circleSolid 20
-  , -- Stem
-    Color (makeColorI 34 139 34 255) $ Translate 0 (-40) $ rectangleSolid 6 36
+  ]
+  where
+    petalX i = 21 * cos (2 * pi * fromIntegral i / 12)
+    petalY i = 21 * sin (2 * pi * fromIntegral i / 12)
+  
+prettySunflowerStem :: Picture
+prettySunflowerStem = Translate 0 (10) $ Pictures
+  [ -- Stem
+    Color (makeColorI 34 139 34 255) $ Translate 0 (-40) $ rectangleSolid 6 16
   , -- Leaves
     Color (makeColorI 60 180 60 180) $ Pictures
         [ Translate (-8) (-38) $ rotateLeaf 30
@@ -43,23 +50,24 @@ prettySunflower = Pictures
         ]
   ]
   where
-    petalX i = 21 * cos (2 * pi * fromIntegral i / 12)
-    petalY i = 21 * sin (2 * pi * fromIntegral i / 12)
     rotateLeaf a = Rotate a $ Scale 1 0.5 $ circleSolid 7
 
 -- | Render a peashooter as a Gloss picture.
 prettyPeashooter :: Picture
-prettyPeashooter = Pictures
-  [ -- Stem
-    Color (makeColorI 34 139 34 255) $ Translate 0 (-32) $ rectangleSolid 8 56
-  , -- Leaf
-    Color (makeColorI 60 180 60 180) $ Translate (-14) (-45) $ Rotate 30 $ Scale 1 0.5 $ circleSolid 12
-  , -- Head
+prettyPeashooter = Translate 0 0 $ Pictures
+  [ -- Head
     Color (makeColorI 90 200 90 255) $ Translate 0 0 $ circleSolid 25
   , -- Mouth (pea hole)
     Color (makeColorI 60 120 60 255) $ Translate 25 0 $ Scale 1 0.5 $ circleSolid 8
   , -- Eye
     Color black $ Translate 12 10 $ circleSolid 4
+  ]
+prettyPeashooterStem :: Picture
+prettyPeashooterStem = Translate 0 (10) $ Pictures
+  [ -- Stem
+    Color (makeColorI 34 139 34 255) $ Translate 0 (-32) $ rectangleSolid 8 56
+  , -- Leaf
+    Color (makeColorI 60 180 60 180) $ Translate (-14) (-45) $ Rotate 30 $ Scale 1 0.5 $ circleSolid 12
   ]
 
 -- | Render a wall-nut as a Gloss picture.
@@ -74,6 +82,18 @@ prettyWallNut = Pictures
   , -- Right eye
     Color black $ Translate (8) 14 $ Scale 1 1.2 $ circleSolid 4
   ]
+
+generateStem :: Plant -> Picture
+generateStem (Plant Sunflower (x, y) health) = 
+    if health > 0 
+    then Translate x y prettySunflowerStem
+    else blank
+generateStem (Plant Peashooter (x, y) health) = 
+    if health > 0 
+    then Translate x y prettyPeashooterStem
+    else blank
+generateStem (Plant WallNut (x, y) health) = blank
+
 
 -- | Render a plant based on its type and health.
 generatePlant :: Plant -> Picture 
@@ -90,6 +110,6 @@ generatePlant (Plant WallNut (x, y) health) =
     then Translate x y prettyWallNut
     else blank
 
-
-
-
+generateFullPlants :: [Plant] -> Picture
+generateFullPlants [] = blank
+generateFullPlants (x:xs) = Pictures ([generateStem x] ++ [(generateFullPlants xs)] ++ [generatePlant x])

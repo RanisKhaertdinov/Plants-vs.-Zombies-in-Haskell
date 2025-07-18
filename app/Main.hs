@@ -80,7 +80,7 @@ laneHeight :: Float
 laneHeight = 66.6  -- Distance between rows (lanes)
 
 gridX :: [Float]
-gridX = [-420, -280, -200, -120, -40, 40, 120, 200, 280]  -- 9 columns
+gridX = [-290, -235, -175, -120, -60, 0, 55, 110, 175]  -- 9 columns
 
 gridY :: [Float]
 gridY = [fromIntegral i * laneHeight - (laneHeight * 2) | i <- [0..numRows-1]]  -- 5 rows (lanes)
@@ -169,7 +169,7 @@ extractLawnMowers _ = []
 
 renderGameObjects :: [Plant] -> [Bullet] -> [Sun] -> [Zombie] -> [LawnMower] -> Float -> [Picture]
 renderGameObjects plants bullets suns zombies lawnmowers currentTime =
-  let plantPics = map generatePlant plants
+  let plantPics = generateFullPlants plants
       bulletPics = B.animateAllB bullets
       sunPics = map renderSun suns
       zombiePics = concatMap (\z@(Zombie pos health _ isBoss) ->
@@ -184,7 +184,7 @@ renderGameObjects plants bullets suns zombies lawnmowers currentTime =
                         else []
         in zombiePic : healthBar) zombies
       lawnmowerPics = map (renderLawnMower currentTime) lawnmowers
-  in plantPics ++ bulletPics ++ sunPics ++ zombiePics ++ lawnmowerPics
+  in [plantPics] ++ bulletPics ++ sunPics ++ zombiePics ++ lawnmowerPics
 
 
 renderGameOverlay :: GameState -> [Picture]

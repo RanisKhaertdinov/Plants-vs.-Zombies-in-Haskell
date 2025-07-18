@@ -23,7 +23,7 @@ renderButton (Button (l, r) (b, t) _ (Coloring rd grn blu a) text)
         ]
 
 name :: Picture
-name = Color white $ Translate (-225) 100 $ Scale 0.5 0.5 $ Text "plant v. zombe"
+name = Color white $ Translate (-250) 100 $ Scale 0.5 0.5 $ Text "zombies v. plants"
 
 
 allButtons :: [Button]
