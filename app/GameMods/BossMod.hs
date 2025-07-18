@@ -10,7 +10,7 @@ zombieHealthMod :: Float
 zombieHealthMod = 1.0
 
 zombieSpeedMod :: Float
-zombieSpeedMod = 200
+zombieSpeedMod = 1.0
 
 sunIntervalMod :: Float
 sunIntervalMod = 4
@@ -22,7 +22,7 @@ generateWave :: Int -> [Zombie]
 generateWave waveNum =
   [ Zombie (Position x lane (speed * zombieSpeedMod) (x, gridY !! laneIdx) (100, 300)) (round (hp * zombieHealthMod)) (Coloring 0.8 0.2 0.2 1) True
   | (x, laneIdx, speed, hp) <- case waveNum of
-      0 -> [(50000, 0, 20, 150)]  -- Single Boss zombie in lane 0
+      0 -> [(400, 0, 20, 150)]  -- Single Boss zombie in lane 0
       _ -> []                    -- No other waves
   , let lane = fromIntegral laneIdx
   ]
