@@ -34,4 +34,5 @@ data GameState
       -- ^ Playing: plants, time, selected plant, sun, suns, sunTimers, mowers, zombies, bullets, wave, random generator, random sun timer
     | GameOver  -- ^ The player has lost
     | Win       -- ^ The player has won
+    | Menu Int StdGen
     deriving (Show)

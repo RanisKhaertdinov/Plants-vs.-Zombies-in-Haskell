@@ -1,7 +1,10 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Main where
 
 import Graphics.Gloss
 import Graphics.Gloss.Interface.Pure.Game
+
+import GameMenu
 import GameMap
 import Plant
 import GameStates
@@ -28,26 +31,39 @@ criticalX :: Float
 criticalX = -350  -- Left edge of the field (house)
 
 -- Select game difficulty
-selectedDifficulty :: GameDifficult
-selectedDifficulty = Boss
+-- selectedDifficulty :: GameDifficult
+-- selectedDifficulty = Boss
 
 -- Get difficulty parameters
-initialSunsCount :: Int
-sunIntervalMod :: Float
-generateWaveFunc :: Int -> [Zombie]
-( initialSunsCount, sunIntervalMod, generateWaveFunc ) = case selectedDifficulty of
-  Easy   -> (EasyMod.initialSunsCount, EasyMod.sunIntervalMod, EasyMod.generateWave)
-  Medium -> (MediumMod.initialSunsCount, MediumMod.sunIntervalMod, MediumMod.generateWave)
-  Hard   -> (HardMod.initialSunsCount, HardMod.sunIntervalMod, HardMod.generateWave)
-  Boss -> (BossMod.initialSunsCount, BossMod.sunIntervalMod, BossMod.generateWave)
+initialSunsCount :: GameDifficult -> Int
+initialSunsCount diff = case diff of
+  Easy   -> EasyMod.initialSunsCount
+  Medium -> MediumMod.initialSunsCount
+  Hard   -> HardMod.initialSunsCount
+  Boss -> BossMod.initialSunsCount
+sunIntervalMod :: GameDifficult -> Float
+sunIntervalMod diff = case diff of
+  Easy   -> EasyMod.sunIntervalMod
+  Medium -> MediumMod.sunIntervalMod
+  Hard   -> HardMod.sunIntervalMod
+  Boss -> BossMod.sunIntervalMod
+generateWaveFunc :: GameDifficult -> Int -> [Zombie]
+generateWaveFunc diff = case diff of
+  Easy   -> EasyMod.generateWave
+  Medium -> MediumMod.generateWave
+  Hard   -> HardMod.generateWave
+  Boss -> BossMod.generateWave
 
-finalWave = case selectedDifficulty of
+finalWave :: GameDifficult -> Int
+finalWave diff = case diff of
   Easy -> EasyMod.waveZombieCount
   Medium -> MediumMod.waveZombieCount
   Hard -> HardMod.waveZombieCount
   Boss -> BossMod.waveZombieCount
-newWave w
-  | w < finalWave = generateWaveFunc w
+
+newWave :: Int -> GameDifficult -> [Zombie]
+newWave w diff
+  | w < finalWave diff = generateWaveFunc diff w
   | otherwise = []
 
 -- Grid definitions for plant placement
@@ -113,10 +129,15 @@ main = do
     map <- generateMap
     gen <- getStdGen
     play (InWindow "PvZ" (1000, 800) (50, 50)) black 60
-        (Playing [] 0 Nothing initialSunsCount [] [] initialLawnMowers (generateWaveFunc 0) [] 1 selectedDifficulty gen 0)
-        (\gs -> Pictures [map, renderGameState gs])
+        (Menu 0 gen)
+        -- (Playing [] 0 Nothing initialSunsCount [] [] initialLawnMowers (generateWaveFunc 0) [] 1 selectedDifficulty gen 0)
+        (\gs -> rend gs map)
         handleEvent
         updateGame
+
+rend :: GameState -> Picture -> Picture
+rend gs@(Menu _ _) _ = renderGameState gs
+rend gs map = Pictures [map, renderGameState gs]
 
 extractCurrentTime :: GameState -> Float
 extractCurrentTime (Playing _ t _ _ _ _ _ _ _ _ _ _ _) = t
@@ -173,6 +194,7 @@ renderGameOverlay _ = []
 
 
 renderGameState :: GameState -> Picture
+renderGameState (Menu select gen) = renderMenu
 renderGameState gs = Pictures $ allPictures
   where
     currentTime = extractCurrentTime gs
@@ -255,6 +277,7 @@ handleEvent (EventKey (MouseButton LeftButton) Down _ (x, y)) state =
             | y < 200 -> handleSunCollection x y state
             | y > 200 && y < 350 -> handleCardSelection x y state
             | otherwise -> state
+        Menu _ gen -> Menu (getDifficulty (x, y)) gen
         _ -> state
 handleEvent _ state = state
 
@@ -304,11 +327,11 @@ processSunGeneration alivePlants timers dt newTime suns =
 
 -- Helper for wave management
 -- Advances to the next wave if all zombies are cleared, or spawns new zombies for the next wave.
-processWaveManagement :: [Z.Zombie] -> Int -> ([Z.Zombie], Int)
-processWaveManagement zombies wave =
+processWaveManagement :: [Z.Zombie] -> Int -> GameDifficult -> ([Z.Zombie], Int)
+processWaveManagement zombies wave diff =
   let clearedZombies = Z.clearDead zombies
       nextWave = if null clearedZombies then wave + 1 else wave
-      finalZombies = if null clearedZombies then newWave wave else clearedZombies
+      finalZombies = if null clearedZombies then newWave wave diff else clearedZombies
   in (finalZombies, nextWave)
 
 -- Main game update function
@@ -331,7 +354,7 @@ updateGame dt (Playing plants t mPlantType sun suns sunTimers mowers zombies bul
       -- Bullet updates
       (zombiesAfterBullets, nbullets) = processBulletUpdates collidedZombies bullets alivePlants dt newTime
       -- Wave management
-      (finalZombies, nwave) = processWaveManagement zombiesAfterBullets wave
+      (finalZombies, nwave) = processWaveManagement zombiesAfterBullets wave difficult
       movedMowers = updateMowers dt activatedMowers
       -- Sun generation
       sunflowerTimers = [((x, y), lastSunTime (x, y)) | Plant Sunflower (x, y) _ <- alivePlants]
@@ -347,6 +370,16 @@ updateGame dt (Playing plants t mPlantType sun suns sunTimers mowers zombies bul
           else Playing alivePlants newTime mPlantType sun allSuns (map (\(x,y,tm) -> ((x,y),tm)) updatedTimers) movedMowers finalZombies nbullets nwave difficult gen' timer'
 updateGame dt (GameOver) = GameOver
 updateGame dt (Win) = Win
+updateGame dt (Menu select gen) 
+  | select == 0 = Menu select gen
+  | select > 0 = Playing [] 0 Nothing (initialSunsCount diff) [] [] initialLawnMowers (generateWaveFunc diff 0) [] 1 diff gen 0
+    where
+      diff = intToDif select
+      intToDif x 
+        | x == 1 = Easy
+        | x == 2 = Medium
+        | x == 3 = Hard
+        | x == 4 = Boss
 
 isEmpty :: [a] -> Bool
 isEmpty [] = True
